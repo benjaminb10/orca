@@ -17,6 +17,7 @@ import { translate } from '@/i18n/i18n'
 import { captureWorktreeSshMutationExpectation } from '@/lib/ssh-mutation-expectation'
 import { statUserOpenedPath } from '@/lib/user-opened-local-path'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
+import { openDocumentInFloatingWorkspace } from '@/lib/open-document-in-floating-workspace'
 
 export function getEditorFileDropSettingsForWorktree(
   store: WorktreeRuntimeOwnerState,
@@ -72,10 +73,7 @@ function captureEditorFileDropContext(worktreeId: string): EditorFileDropContext
     return {
       fileContext: {
         ...getEditorFileDropOperationContext(store, worktreeId, worktreePath, connectionId),
-        // Why: the floating workspace has no host record; it is always local.
-        ...(worktreeId === FLOATING_TERMINAL_WORKTREE_ID
-          ? { expectedExecutionHostId: 'local' as const }
-          : captureWorktreeSshMutationExpectation(store, worktreeId))
+        ...captureWorktreeSshMutationExpectation(store, worktreeId)
       },
       worktreePath,
       connectionId
@@ -105,6 +103,17 @@ function showOwnerChangedError(): void {
       "Couldn't verify which host owns this workspace. Try again after it reconnects."
     )
   )
+}
+
+export function editorGroupStillExists({
+  worktreeId,
+  groupId
+}: EditorFileDropDestination): boolean {
+  if (!groupId) {
+    return true
+  }
+  const groups = useAppStore.getState().groupsByWorktree[worktreeId] ?? []
+  return groups.some((group) => group.id === groupId)
 }
 
 /**
@@ -139,11 +148,6 @@ async function openEditorFileDropPaths(
 ): Promise<void> {
   const store = useAppStore.getState()
   const groupOptions = groupId ? { targetGroupId: groupId } : null
-  // Why: floating tabs are local-only, so a focused runtime must not claim them.
-  const floating = worktreeId === FLOATING_TERMINAL_WORKTREE_ID
-  const localOpenOptions = floating
-    ? { suppressActiveRuntimeFallback: true, ...groupOptions }
-    : groupOptions
   const dropSettings = fileContext.settings
   const runtimeEnvironmentId = dropSettings?.activeRuntimeEnvironmentId ?? null
   if (shouldUploadRemoteEditorFileDrop(dropSettings, connectionId)) {
@@ -216,17 +220,24 @@ async function openEditorFileDropPaths(
           relativePath = maybeRelative
         }
       }
+      store.setActiveTabType('editor', worktreeId)
+      if (worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+        openDocumentInFloatingWorkspace(
+          store.openFile,
+          { filePath, relativePath },
+          groupOptions ?? {}
+        )
+        continue
+      }
       const file = {
         filePath,
         relativePath,
         worktreeId,
         language: detectLanguage(filePath),
-        mode: 'edit' as const,
-        ...(floating ? { runtimeEnvironmentId: null } : {})
+        mode: 'edit' as const
       }
-      store.setActiveTabType('editor', worktreeId)
-      if (localOpenOptions) {
-        store.openFile(file, localOpenOptions)
+      if (groupOptions) {
+        store.openFile(file, groupOptions)
       } else {
         store.openFile(file)
       }

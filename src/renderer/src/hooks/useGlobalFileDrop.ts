@@ -21,8 +21,7 @@ export function useGlobalFileDrop(): void {
         return
       }
 
-      // Why: only drops on unmarked chrome still arrive here (tab strips and editor
-      // areas own their drops); PR6 removes this legacy active-worktree route.
+      // Only unmarked chrome still uses the preload drop route.
       const activeWorktreeId = useAppStore.getState().activeWorktreeId
       if (!activeWorktreeId) {
         return

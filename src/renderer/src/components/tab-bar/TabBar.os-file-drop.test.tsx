@@ -45,7 +45,10 @@ vi.mock('./tab-strip-drag-scroll', () => tabBarShellStubs().dragScroll())
 vi.mock('@/lib/pane-manager/client-hosted-browser-row-state', () =>
   tabBarShellStubs().clientHostedBrowserRows()
 )
-vi.mock('../editor/editor-dropped-file-open', () => ({ captureEditorFileDropOpen: mocks.capture }))
+vi.mock('../editor/editor-dropped-file-open', () => ({
+  captureEditorFileDropOpen: mocks.capture,
+  editorGroupStillExists: () => true
+}))
 
 function dropFile(target: Element): void {
   const transfer = { types: ['Files'], files: [new File(['x'], 'a.ts')], dropEffect: 'move' }

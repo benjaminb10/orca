@@ -1,22 +1,34 @@
 // @vitest-environment happy-dom
+import { Suspense, use } from 'react'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PreparedDroppedPaths } from '../../../../shared/native-file-drop-preparation'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
+import { createOsFileDropSequence } from '@/hooks/use-os-file-drop-owner'
+import type * as OsFileDropOwnerModule from '@/hooks/use-os-file-drop-owner'
 import { useEditorGroupFileDropOwner } from './use-editor-group-file-drop-owner'
 
-const mocks = vi.hoisted(() => ({
-  openFile: vi.fn(),
-  setActiveTabType: vi.fn(),
-  stat: vi.fn(),
-  prepare: vi.fn()
-}))
-vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
+const mocks = vi.hoisted(() => {
+  const groupsByWorktree: Record<string, { id: string }[]> = {}
+  return {
+    openFile: vi.fn(),
+    setActiveTabType: vi.fn(),
+    stat: vi.fn(),
+    prepare: vi.fn(),
+    toastError: vi.fn(),
+    groupsByWorktree
+  }
+})
+vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }))
+vi.mock('@/hooks/use-os-file-drop-owner', async (importOriginal) => {
+  const actual = await importOriginal<typeof OsFileDropOwnerModule>()
+  return { ...actual, createOsFileDropSequence: vi.fn(actual.createOsFileDropSequence) }
+})
 vi.mock('@/lib/connection-context', () => ({ getConnectionId: () => null }))
 vi.mock('@/lib/ssh-mutation-expectation', () => ({
   // Like the real lookup, a workspace with no host record fails closed.
   captureWorktreeSshMutationExpectation: (_state: unknown, worktreeId: string) => {
-    if (!worktreeId.startsWith('wt-')) {
+    if (!worktreeId.startsWith('wt-') && worktreeId !== FLOATING_TERMINAL_WORKTREE_ID) {
       throw new Error('unresolved host')
     }
     return { expectedExecutionHostId: 'local' }
@@ -31,6 +43,7 @@ vi.mock('@/store', () => ({
     getState: () => ({
       settings: {},
       activeWorktreeId: 'wt-active',
+      groupsByWorktree: mocks.groupsByWorktree,
       getKnownWorktreeById: (id: string) => ({ id, path: `/repos/${id}` }),
       setActiveTabType: mocks.setActiveTabType,
       openFile: mocks.openFile
@@ -38,15 +51,36 @@ vi.mock('@/store', () => ({
   }
 }))
 
-function EditorGroup({ worktreeId, groupId }: { worktreeId: string; groupId: string }) {
-  const attachStrip = useEditorGroupFileDropOwner({ worktreeId, groupId })
+function EditorArea({ worktreeId, groupId }: { worktreeId: string; groupId: string }) {
   const attachArea = useEditorGroupFileDropOwner({ worktreeId, groupId })
+  return <div ref={attachArea} data-testid={`${groupId}:area`} />
+}
+
+function EditorGroup({
+  worktreeId,
+  groupId,
+  editorTabActive = true
+}: {
+  worktreeId: string
+  groupId: string
+  editorTabActive?: boolean
+}) {
+  const attachStrip = useEditorGroupFileDropOwner({ worktreeId, groupId })
   return (
     <>
       <div ref={attachStrip} data-testid={`${groupId}:strip`} />
-      <div ref={attachArea} data-testid={`${groupId}:area`} />
+      {/* Like TabGroupPanel, the editor area only renders while an editor tab is active. */}
+      {editorTabActive ? <EditorArea worktreeId={worktreeId} groupId={groupId} /> : null}
     </>
   )
+}
+
+function deferredPreparation(): (prepared: PreparedDroppedPaths) => void {
+  let finish: (prepared: PreparedDroppedPaths) => void = () => undefined
+  mocks.prepare.mockImplementationOnce(
+    () => new Promise<PreparedDroppedPaths>((resolve) => (finish = resolve))
+  )
+  return (prepared) => finish(prepared)
 }
 
 function dropFile(target: Element, name: string): void {
@@ -62,6 +96,10 @@ function dropFile(target: Element, name: string): void {
 const openedPaths = (): string[] => mocks.openFile.mock.calls.map(([file]) => file.filePath)
 
 beforeEach(() => {
+  mocks.groupsByWorktree = {
+    'wt-b': [{ id: 'group-b' }],
+    [FLOATING_TERMINAL_WORKTREE_ID]: [{ id: 'floating-group' }]
+  }
   mocks.stat.mockResolvedValue({ isDirectory: false, escapesWorktree: false })
   mocks.prepare.mockImplementation(async ({ paths }: { paths: string[] }) => ({
     paths,
@@ -116,7 +154,7 @@ describe('editor group OS file drops', () => {
         worktreeId: FLOATING_TERMINAL_WORKTREE_ID,
         runtimeEnvironmentId: null
       }),
-      { suppressActiveRuntimeFallback: true, targetGroupId: 'floating-group' }
+      { preview: false, suppressActiveRuntimeFallback: true, targetGroupId: 'floating-group' }
     )
   })
 
@@ -137,5 +175,74 @@ describe('editor group OS file drops', () => {
     await act(async () => pending[0]())
     await waitFor(() => expect(mocks.openFile).toHaveBeenCalledTimes(2))
     expect(openedPaths()).toEqual(['/repos/wt-b/first.ts', '/repos/wt-b/second.ts'])
+  })
+
+  it('still opens in the group when switching to a terminal tab unmounts the editor area', async () => {
+    const finish = deferredPreparation()
+    const view = render(<EditorGroup worktreeId="wt-b" groupId="group-b" />)
+    dropFile(view.getByTestId('group-b:area'), 'shot.png')
+    view.rerender(<EditorGroup worktreeId="wt-b" groupId="group-b" editorTabActive={false} />)
+    await act(async () => finish({ paths: ['/repos/wt-b/shot.png'], failures: [] }))
+    await waitFor(() => expect(mocks.openFile).toHaveBeenCalledTimes(1))
+    expect(mocks.openFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/repos/wt-b/shot.png', worktreeId: 'wt-b' }),
+      { targetGroupId: 'group-b' }
+    )
+  })
+
+  it('opens nothing once the group closes during preparation, but still reports failures', async () => {
+    const finish = deferredPreparation()
+    const view = render(<EditorGroup worktreeId="wt-b" groupId="group-b" />)
+    dropFile(view.getByTestId('group-b:area'), 'shot.png')
+    view.unmount()
+    mocks.groupsByWorktree['wt-b'] = [{ id: 'group-other' }]
+    await act(async () =>
+      finish({
+        paths: ['/repos/wt-b/shot.png'],
+        failures: [
+          {
+            target: 'rejected',
+            reason: 'temp-copy-failed',
+            commonReason: 'copy-failed',
+            pathCount: 1,
+            byteLength: 1
+          }
+        ]
+      })
+    )
+    await waitFor(() => expect(mocks.toastError).toHaveBeenCalledTimes(1))
+    expect(mocks.stat).not.toHaveBeenCalled()
+    expect(mocks.openFile).not.toHaveBeenCalled()
+  })
+
+  it('keeps drop order when both roots remount while preparation is pending', async () => {
+    const finish = deferredPreparation()
+    const first = render(<EditorGroup worktreeId="wt-b" groupId="group-b" />)
+    dropFile(first.getByTestId('group-b:area'), 'first.ts')
+    first.unmount()
+    const second = render(<EditorGroup worktreeId="wt-b" groupId="group-b" />)
+    dropFile(second.getByTestId('group-b:strip'), 'second.ts')
+    await act(async () => undefined)
+    expect(mocks.openFile).not.toHaveBeenCalled()
+    await act(async () => finish({ paths: ['/repos/wt-b/first.ts'], failures: [] }))
+    await waitFor(() => expect(mocks.openFile).toHaveBeenCalledTimes(2))
+    expect(openedPaths()).toEqual(['/repos/wt-b/first.ts', '/repos/wt-b/second.ts'])
+  })
+
+  it('creates no shared sequence for a render that never commits', async () => {
+    const never = new Promise<never>(() => undefined)
+    function SuspendedGroup() {
+      useEditorGroupFileDropOwner({ worktreeId: 'wt-b', groupId: 'group-suspended' })
+      use(never)
+      return null
+    }
+    await act(async () => {
+      render(
+        <Suspense fallback={null}>
+          <SuspendedGroup />
+        </Suspense>
+      )
+    })
+    expect(createOsFileDropSequence).not.toHaveBeenCalled()
   })
 })

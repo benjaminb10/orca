@@ -8,37 +8,51 @@ import {
 import { getNativeFileDropRejectionMessage } from '@/hooks/useGlobalFileDrop'
 import {
   captureEditorFileDropOpen,
+  editorGroupStillExists,
   type EditorFileDropDestination
 } from './editor-dropped-file-open'
 
-// The tab strip and editor area are sibling roots of one group and render in different trees.
-const groupSequences = new Map<string, { sequence: OsFileDropSequence; owners: number }>()
+type GroupSequenceEntry = { sequence: OsFileDropSequence; owners: number }
 
-function sequenceForGroup(key: string): OsFileDropSequence {
+// The tab strip and editor area are sibling roots of one group and render in different trees.
+const groupSequences = new Map<string, GroupSequenceEntry>()
+
+function groupSequenceEntry(key: string): GroupSequenceEntry {
   const existing = groupSequences.get(key)
   if (existing) {
-    return existing.sequence
+    return existing
   }
-  const sequence = createOsFileDropSequence()
-  groupSequences.set(key, { sequence, owners: 0 })
-  return sequence
+  const entry = { sequence: createOsFileDropSequence(), owners: 0 }
+  groupSequences.set(key, entry)
+  return entry
 }
 
 function useEditorGroupFileDropSequence(key: string): OsFileDropSequence {
-  // Resolved during render so roots that mount in the same commit share one sequence.
-  const sequence = useMemo(() => sequenceForGroup(key), [key])
   useLayoutEffect(() => {
-    const entry = groupSequences.get(key) ?? { sequence, owners: 0 }
-    groupSequences.set(key, entry)
+    const entry = groupSequenceEntry(key)
     entry.owners += 1
     return () => {
       entry.owners -= 1
-      if (entry.owners === 0 && groupSequences.get(key) === entry) {
-        groupSequences.delete(key)
-      }
+      // Why: wait for queued drops, so a root remounting in the same commit keeps their order.
+      void entry.sequence.deliveryTail.then(() => {
+        if (entry.owners === 0 && groupSequences.get(key) === entry) {
+          groupSequences.delete(key)
+        }
+      })
     }
-  }, [key, sequence])
-  return sequence
+  }, [key])
+  // Resolved when a drop queues, never during render.
+  return useMemo(
+    () => ({
+      get deliveryTail() {
+        return groupSequenceEntry(key).sequence.deliveryTail
+      },
+      set deliveryTail(tail: Promise<void>) {
+        groupSequenceEntry(key).sequence.deliveryTail = tail
+      }
+    }),
+    [key]
+  )
 }
 
 /** Opens OS files dropped on this group's tab strip or editor area in that group's worktree. */
@@ -52,6 +66,8 @@ export function useEditorGroupFileDropOwner({
     consumer: 'main-reader',
     sequence,
     captureDestination: () => captureEditorFileDropOpen({ worktreeId, groupId }),
+    // Why: switching to a terminal tab unmounts the editor area; the open step checks the group.
+    isDestinationLive: () => editorGroupStillExists({ worktreeId, groupId }),
     onDrop: async (prepared, { destination }) => {
       for (const failure of prepared.failures) {
         const message = getNativeFileDropRejectionMessage(failure)
