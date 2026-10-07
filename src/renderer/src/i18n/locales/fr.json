@@ -5503,7 +5503,9 @@
           "addProject": "Ajouter un projet",
           "projects": "Projets",
           "spaces": "Espaces",
-          "views": "Vue de la barre latérale"
+          "views": "Vue de la barre latérale",
+          "restoreProjectOrder": "Rétablir l'ordre précédent des projets",
+          "sortProjectsByAttention": "Trier les projets par attention"
         },
         "SidebarNav": {
           "80611a8b10": "Recherche",
@@ -5637,7 +5639,10 @@
           "219ebf1961": "Nom de branche",
           "folderPathIdentity": "Branche / chemin de dossier",
           "cli": "Orca CLI",
-          "workspaceOptions": "Options de l'espace de travail"
+          "workspaceOptions": "Options de l'espace de travail",
+          "projectOrderAttention": "Attention",
+          "projectOrderAttentionDescription": "Projets dont un agent a besoin de vous d'abord, puis terminés, puis en cours",
+          "compactProjectRows": "Une ligne par projet"
         },
         "SshTargetRow": {
           "4677394048": "Connexion…",
@@ -9478,7 +9483,13 @@
             "zcodeUsageDescription": "Afficher l'utilisation du quota du plan de codage ZCode dans la barre d'état.",
             "zcode": "code z",
             "zai": "zaï",
-            "glm": "GLM"
+            "glm": "GLM",
+            "compactProjectRows": {
+              "title": "Une ligne par projet",
+              "description": "En regroupement par projet, un projet avec un seul espace de travail s'affiche sur une seule ligne avec le statut de son agent. Les projets avec plusieurs espaces de travail affichent leur statut le plus urgent.",
+              "compact": "compact",
+              "attention": "attention"
+            }
           }
         },
         "auto": {

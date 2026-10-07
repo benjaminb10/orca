@@ -5382,7 +5382,9 @@
           "a30e34eb5c": "Cerrar tablero del espacio de trabajo",
           "spaces": "Espacios",
           "views": "Vista de la barra lateral",
-          "addProject": "Agregar proyecto"
+          "addProject": "Agregar proyecto",
+          "restoreProjectOrder": "Restaurar el orden anterior de proyectos",
+          "sortProjectsByAttention": "Ordenar proyectos por atención"
         },
         "SidebarNav": {
           "80611a8b10": "Buscar",
@@ -5508,7 +5510,10 @@
           "219ebf1961": "Nombre de rama",
           "folderPathIdentity": "Rama / ruta de carpeta",
           "cli": "Orca CLI",
-          "workspaceOptions": "Opciones de espacio de trabajo"
+          "workspaceOptions": "Opciones de espacio de trabajo",
+          "projectOrderAttention": "Atención",
+          "projectOrderAttentionDescription": "Primero los proyectos con agentes que te necesitan, luego terminados, luego en curso",
+          "compactProjectRows": "Una fila por proyecto"
         },
         "SshTargetRow": {
           "4677394048": "Conectando…",
@@ -9330,6 +9335,12 @@
               "close": "cerca",
               "notification": "área de notificaciones",
               "background": "fondo"
+            },
+            "compactProjectRows": {
+              "title": "Una fila por proyecto",
+              "description": "Al agrupar por proyecto, un proyecto con un solo espacio de trabajo se muestra en una sola fila con el estado de su agente. Los proyectos con varios espacios de trabajo muestran su estado más urgente.",
+              "compact": "compacto",
+              "attention": "atención"
             }
           }
         },

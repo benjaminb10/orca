@@ -14,6 +14,7 @@ import { orderHostSectionOptions } from './host-section-order'
 import { buildSidebarHostOptions } from './sidebar-host-options'
 import { getLogicalRepoOrderRankById } from './project-header-drop'
 import { getRenderedWorktreesInSidebarOrder } from './worktree-sidebar-row-preference'
+import { buildProjectAttentionFromState } from './project-attention-order'
 import { selectWorktreeListReviewCacheInputs } from './worktree-list/listing/review-cache-inputs'
 import {
   filterFolderWorkspacesForVisibleHosts,
@@ -93,7 +94,10 @@ export function computeRenderedSidebarRows(
     // Why no hostLabelById: it only feeds display-only host context labels, never row order.
     undefined,
     defaultHostId,
-    pinnedDisplayPolicy
+    pinnedDisplayPolicy,
+    state.groupBy === 'repo' && state.projectOrderBy === 'attention'
+      ? buildProjectAttentionFromState(state, visibleWorktrees)
+      : undefined
   )
 
   // Why lazy: with no host filter, addHostSectionRows is a pass-through, so skip building the whole host registry on a keystroke.

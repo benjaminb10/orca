@@ -42,6 +42,7 @@ import {
 } from './header-event-guards'
 import type { WorktreeSidebarHeaderDrag } from '../drag/use-header-drag'
 import { getWorktreeOptionId } from './option-dom'
+import { ProjectAttentionStatusIndicator } from './ProjectAttentionStatusIndicator'
 
 export type SectionHeaderRowContext = {
   groupBy: WorktreeGroupBy
@@ -309,6 +310,9 @@ export function renderWorktreeSectionHeaderRow(args: {
               'cursor-grab active:cursor-grabbing'
           )}
         >
+          {row.projectWorktreeIds ? (
+            <ProjectAttentionStatusIndicator worktreeIds={row.projectWorktreeIds} />
+          ) : null}
           {row.icon ? (
             <div
               className={cn(

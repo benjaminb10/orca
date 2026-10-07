@@ -44,6 +44,7 @@ import type {
 } from './row-types'
 import { getRenderedNaturalAnchorRepoIds, withRepoSectionDisplayLabels } from './section-order'
 import { buildOrderedGroups } from './worktree-grouping'
+import type { ProjectAttentionByWorktree } from './project-attention-rank'
 
 export function buildRows(
   groupBy: WorktreeGroupBy,
@@ -70,7 +71,8 @@ export function buildRows(
   folderWorkspaces: readonly FolderWorkspace[] = [],
   hostLabelById?: ReadonlyMap<string, string>,
   defaultHostId: ExecutionHostId = LOCAL_EXECUTION_HOST_ID,
-  pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy = getPinnedWorktreeDisplayPolicy(settings)
+  pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy = getPinnedWorktreeDisplayPolicy(settings),
+  projectAttentionByWorktree?: ProjectAttentionByWorktree
 ): Row[] {
   const result: Row[] = []
   const projectIndex = buildProjectGroupingIndex(projectGrouping)
@@ -209,7 +211,8 @@ export function buildRows(
     pendingByRepo,
     repoOrder,
     projectOrderBy,
-    folderWorkspaces: renderableFolderWorkspaces
+    folderWorkspaces: renderableFolderWorkspaces,
+    projectAttentionByWorktree
   })
 
   const sectionContext: SectionAppendContext = {
@@ -229,7 +232,8 @@ export function buildRows(
     lineageById,
     worktreeMap,
     nestLineage,
-    cyclicLineageIds
+    cyclicLineageIds,
+    compactProjectRows: settings?.compactProjectRows === true
   }
 
   if (groupBy !== 'repo' || projectGroups.length === 0) {
@@ -245,7 +249,8 @@ export function buildRows(
     projectGroups,
     folderWorkspaces: renderableFolderWorkspaces,
     projectOrderBy,
-    repoOrder
+    repoOrder,
+    projectAttentionByWorktree
   })
 
   return result

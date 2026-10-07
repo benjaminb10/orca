@@ -53,6 +53,8 @@ export type WorktreeCardProps = {
   nativeDragEnabled?: boolean
   affiliateListMode?: boolean
   statusPrDisplay?: WorktreeCardPrDisplay | null
+  /** Compact project rows: the card stands in for its project, titled by the project name. */
+  projectRowLabel?: string
 }
 
 type DefaultedWorktreeCardProp =

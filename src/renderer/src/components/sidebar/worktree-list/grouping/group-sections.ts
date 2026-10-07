@@ -14,7 +14,11 @@ import {
   getLaneHostWorktreeIds,
   getMixedHostContextLabels
 } from './host-labels'
-import type { OrderedGroupEntry, ProjectGroupingIndex } from './project-grouping'
+import type {
+  OrderedGroupEntry,
+  ProjectGroupingIndex,
+  WorktreeGroupEntry
+} from './project-grouping'
 import {
   appendWorktreeRows,
   buildFolderWorkspaceRow,
@@ -23,11 +27,13 @@ import {
   buildPendingCreationRow
 } from './row-builders'
 import type {
+  GroupHeaderRow,
   ImportedWorktreesCardCandidate,
   NewExternalWorktreesInboxCandidate,
   PendingCreationRef,
   Row,
-  WorktreeGroupBy
+  WorktreeGroupBy,
+  WorktreeRow
 } from './row-types'
 import { orderMainWorktreeFirst } from './section-order'
 
@@ -50,6 +56,80 @@ export type SectionAppendContext = {
   worktreeMap: Map<string, Worktree>
   nestLineage: boolean
   cyclicLineageIds: ReadonlySet<string>
+  /** Group-by-project only: fold single-workspace projects into one row. */
+  compactProjectRows?: boolean
+}
+
+function getSectionRepoIds(key: string, group: WorktreeGroupEntry): string[] {
+  if (group.repoIds.size > 0) {
+    return [...group.repoIds]
+  }
+  if (group.repo) {
+    return [group.repo.id]
+  }
+  return key.startsWith('repo:') ? [key.slice('repo:'.length)] : []
+}
+
+function appendSectionWorktreeRows(
+  ctx: SectionAppendContext,
+  target: Row[],
+  key: string,
+  group: WorktreeGroupEntry,
+  projectGroupDepth: number
+): void {
+  const { groupBy, repoMap, projectIndex, hostLabelById } = ctx
+  const items = groupBy === 'repo' ? orderMainWorktreeFirst(group.items) : group.items
+  const hostContextLabelByRepoId =
+    groupBy === 'repo'
+      ? getMixedHostContextLabels(group, repoMap, projectIndex, hostLabelById)
+      : undefined
+  // Why (STA-4343): repo grouping normally labels by repo, but one repo id can
+  // be registered on two hosts — then every row in the group shares a repo id
+  // and the per-repo label cannot tell them apart. Fall back to the per-row
+  // host labels, which are keyed by host-qualified identity.
+  const hostContextLabelByWorktreeIdentity =
+    groupBy === 'repo' && hostContextLabelByRepoId ? undefined : ctx.mixedWorktreeHostContextLabels
+  appendWorktreeRows(target, items, repoMap, ctx.lineageById, ctx.worktreeMap, {
+    nestLineage: ctx.nestLineage,
+    collapsedGroups: ctx.collapsedGroups,
+    groupDepth: projectGroupDepth,
+    sectionKey: key,
+    hostContextLabelByRepoId,
+    hostContextLabelByWorktreeIdentity,
+    cyclicLineageIds: ctx.cyclicLineageIds
+  })
+}
+
+// Why: a project whose only visible content is one workspace reads as that workspace,
+// so the header folds into the card; notices, pending creates and folders keep the header.
+function buildCompactProjectRow(
+  ctx: SectionAppendContext,
+  key: string,
+  group: WorktreeGroupEntry,
+  header: GroupHeaderRow,
+  repoIds: readonly string[],
+  projectGroupDepth: number
+): WorktreeRow | null {
+  if (
+    !header.repo ||
+    group.items.length !== 1 ||
+    (group.folderWorkspaces?.length ?? 0) > 0 ||
+    repoIds.some(
+      (repoId) =>
+        ctx.importedWorktreesByRepo.has(repoId) ||
+        ctx.newExternalWorktreesInboxByRepo.has(repoId) ||
+        (ctx.pendingByRepo.get(repoId)?.length ?? 0) > 0
+    )
+  ) {
+    return null
+  }
+  const rows: Row[] = []
+  appendSectionWorktreeRows(ctx, rows, key, group, projectGroupDepth)
+  const [row] = rows
+  if (rows.length !== 1 || row?.type !== 'item') {
+    return null
+  }
+  return { ...row, compactProjectHeader: header }
 }
 
 export function appendOrderedGroups(
@@ -64,22 +144,15 @@ export function appendOrderedGroups(
     workspaceStatuses,
     repoMap,
     defaultHostId,
-    hostLabelById,
-    projectIndex,
     importedWorktreesByRepo,
     newExternalWorktreesInboxByRepo,
-    pendingByRepo,
-    mixedWorktreeHostContextLabels,
-    lineageById,
-    worktreeMap,
-    nestLineage,
-    cyclicLineageIds
+    pendingByRepo
   } = ctx
   for (const [key, group] of groupsToAppend) {
     const isCollapsed = collapsedGroups.has(key)
     const repo = group.repo
     const folderPairs = group.folderWorkspaces ?? []
-    const header =
+    const header: GroupHeaderRow =
       groupBy === 'repo'
         ? {
             type: 'header' as const,
@@ -147,17 +220,18 @@ export function appendOrderedGroups(
               }
             })()
 
+    const repoIds = groupBy === 'repo' ? getSectionRepoIds(key, group) : []
+    if (groupBy === 'repo' && ctx.compactProjectRows) {
+      const compactRow = buildCompactProjectRow(ctx, key, group, header, repoIds, projectGroupDepth)
+      if (compactRow) {
+        result.push(compactRow)
+        continue
+      }
+      header.projectWorktreeIds = group.items.map((worktree) => worktree.id)
+    }
     result.push(header)
     if (!isCollapsed) {
       if (groupBy === 'repo') {
-        const repoIds =
-          group.repoIds.size > 0
-            ? [...group.repoIds]
-            : repo
-              ? [repo.id]
-              : key.startsWith('repo:')
-                ? [key.slice('repo:'.length)]
-                : []
         for (const repoId of repoIds) {
           const candidate = importedWorktreesByRepo.get(repoId)
           if (candidate) {
@@ -190,26 +264,7 @@ export function appendOrderedGroups(
           }
         }
       }
-      const items = groupBy === 'repo' ? orderMainWorktreeFirst(group.items) : group.items
-      const hostContextLabelByRepoId =
-        groupBy === 'repo'
-          ? getMixedHostContextLabels(group, repoMap, projectIndex, hostLabelById)
-          : undefined
-      // Why (STA-4343): repo grouping normally labels by repo, but one repo id can
-      // be registered on two hosts — then every row in the group shares a repo id
-      // and the per-repo label cannot tell them apart. Fall back to the per-row
-      // host labels, which are keyed by host-qualified identity.
-      const hostContextLabelByWorktreeIdentity =
-        groupBy === 'repo' && hostContextLabelByRepoId ? undefined : mixedWorktreeHostContextLabels
-      appendWorktreeRows(result, items, repoMap, lineageById, worktreeMap, {
-        nestLineage,
-        collapsedGroups,
-        groupDepth: projectGroupDepth,
-        sectionKey: key,
-        hostContextLabelByRepoId,
-        hostContextLabelByWorktreeIdentity,
-        cyclicLineageIds
-      })
+      appendSectionWorktreeRows(ctx, result, key, group, projectGroupDepth)
       for (const pair of folderPairs) {
         result.push(buildFolderWorkspaceRow(pair, projectGroupDepth))
       }

@@ -21,6 +21,7 @@ import { addHostSectionRows } from '../../host-section-rows'
 import { orderHostSectionOptions } from '../../host-section-order'
 import { buildSidebarHostOptions } from '../../sidebar-host-options'
 import { selectPendingWorktreeCreationKeys } from './pending-worktree-creation-keys'
+import { useProjectAttentionByWorktree } from './use-project-attention'
 
 type SectionRowsArgs = {
   groupBy: WorktreeGroupBy
@@ -153,6 +154,10 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     [effectiveCollapsedGroups, hostScopedGroups]
   )
 
+  const projectAttentionByWorktree = useProjectAttentionByWorktree(
+    args.groupBy === 'repo' && args.projectOrderBy === 'attention',
+    worktrees
+  )
   const rows: Row[] = useMemo(
     () =>
       buildRows(
@@ -177,7 +182,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
         args.visibleFolderWorkspacesForRows,
         hostLabelById,
         defaultHostId,
-        args.pinnedDisplayPolicy
+        args.pinnedDisplayPolicy,
+        projectAttentionByWorktree
       ),
     [
       args.groupBy,
@@ -200,7 +206,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       args.newExternalWorktreesInboxByRepo,
       pendingCreations,
       hostLabelById,
-      args.pinnedDisplayPolicy
+      args.pinnedDisplayPolicy,
+      projectAttentionByWorktree
     ]
   )
   const orderedHostOptions = useMemo(
