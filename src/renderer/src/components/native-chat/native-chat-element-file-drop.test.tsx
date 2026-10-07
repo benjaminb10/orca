@@ -146,6 +146,18 @@ describe('element-owned native chat drops', () => {
     expect(view.container.querySelector('[data-composer-scope-key]')).toBeNull()
     expect(electron.send).not.toHaveBeenCalled()
   })
+  it('shows the attachment overlay on dragover while the chat can accept files', async () => {
+    const attach = vi.fn()
+    const view = render(<Chat attach={attach} />)
+    const target = view.container.querySelector('.ProseMirror')!
+    const transfer = { types: ['Files'], dropEffect: 'move' }
+    await act(async () => dragEvent(target, 'dragover', transfer))
+    expect(transfer.dropEffect).toBe('copy')
+    expect(view.getByText('Drop to attach to this chat')).toBeTruthy()
+    await drop(target)
+    expect(view.queryByText('Drop to attach to this chat')).toBeNull()
+    expect(attach).toHaveBeenCalledExactlyOnceWith(['/drop/a.png'])
+  })
   it('claims a portaled chat inside a legacy terminal while the terminal outside stays legacy exactly once', async () => {
     const attach = vi.fn()
     const terminal = document.createElement('div')
