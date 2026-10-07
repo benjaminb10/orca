@@ -108,6 +108,38 @@ describe('editor group OS file drops on remote workspaces', () => {
     )
   })
 
+  it.each(['wt-ssh', 'wt-runtime'])(
+    'opens nothing when the group closes during upload in %s and keeps preparation feedback',
+    async (worktreeId) => {
+      let finish: (result: {
+        results: { status: 'imported'; kind: 'file'; destPath: string }[]
+      }) => void = () => undefined
+      mocks.importPaths.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
+      mocks.prepare.mockResolvedValueOnce({
+        paths: ['/Users/me/Desktop/shot.png'],
+        failures: [{ target: 'rejected', reason: 'unresolved-paths', pathCount: 1, byteLength: 0 }]
+      })
+      const groupId = worktreeId === 'wt-ssh' ? 'group-ssh' : 'group-runtime'
+      const view = render(<EditorStrip worktreeId={worktreeId} groupId={groupId} />)
+      dropFile(view.getByTestId('strip'))
+      await waitFor(() => expect(mocks.importPaths).toHaveBeenCalledTimes(1))
+      expect(mocks.toastError).toHaveBeenCalledTimes(1)
+      view.unmount()
+      useAppStore.setState((state) => ({
+        groupsByWorktree: {
+          ...state.groupsByWorktree,
+          [worktreeId]: [{ id: 'group-other', worktreeId, activeTabId: null, tabOrder: [] }]
+        }
+      }))
+      await act(async () =>
+        finish({ results: [{ status: 'imported', kind: 'file', destPath: '/uploaded/shot.png' }] })
+      )
+      expect(mocks.openFile).not.toHaveBeenCalled()
+      expect(mocks.setActiveTabType).not.toHaveBeenCalled()
+      expect(mocks.toastError).toHaveBeenCalledTimes(1)
+    }
+  )
+
   it('refuses when the SSH connection changes before preparation finishes', async () => {
     let finish: (prepared: PreparedDroppedPaths) => void = () => undefined
     mocks.prepare.mockImplementationOnce(

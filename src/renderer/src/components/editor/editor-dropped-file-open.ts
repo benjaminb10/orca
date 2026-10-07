@@ -129,7 +129,7 @@ export function captureEditorFileDropOpen(
     return async () => undefined
   }
   return async (paths) => {
-    if (paths.length === 0) {
+    if (paths.length === 0 || !editorGroupStillExists(destination)) {
       return
     }
     const current = captureEditorFileDropContext(destination.worktreeId)
@@ -143,10 +143,11 @@ export function captureEditorFileDropOpen(
 
 async function openEditorFileDropPaths(
   { fileContext, worktreePath, connectionId }: EditorFileDropContext,
-  { worktreeId, groupId }: EditorFileDropDestination,
+  destination: EditorFileDropDestination,
   paths: readonly string[]
 ): Promise<void> {
   const store = useAppStore.getState()
+  const { worktreeId, groupId } = destination
   const groupOptions = groupId ? { targetGroupId: groupId } : null
   const dropSettings = fileContext.settings
   const runtimeEnvironmentId = dropSettings?.activeRuntimeEnvironmentId ?? null
@@ -170,7 +171,13 @@ async function openEditorFileDropPaths(
         destinationDir,
         { ensureDestinationDir: true }
       )
+      if (!editorGroupStillExists(destination)) {
+        return
+      }
       for (const result of results) {
+        if (!editorGroupStillExists(destination)) {
+          return
+        }
         if (result.status !== 'imported' || result.kind === 'directory') {
           continue
         }
@@ -208,6 +215,9 @@ async function openEditorFileDropPaths(
   for (const filePath of paths) {
     try {
       const stat = await statUserOpenedPath(fileContext, filePath)
+      if (!editorGroupStillExists(destination)) {
+        return
+      }
       if (stat.isDirectory) {
         continue
       }

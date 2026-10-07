@@ -229,6 +229,33 @@ describe('editor group OS file drops', () => {
     expect(openedPaths()).toEqual(['/repos/wt-b/first.ts', '/repos/wt-b/second.ts'])
   })
 
+  it.each(['group', 'workspace'])(
+    'opens nothing when the destination %s closes during stat and keeps preparation feedback',
+    async (closed) => {
+      let finish: (stat: { isDirectory: boolean; escapesWorktree: boolean }) => void = () =>
+        undefined
+      mocks.stat.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
+      mocks.prepare.mockResolvedValueOnce({
+        paths: ['/repos/wt-b/shot.png'],
+        failures: [{ target: 'rejected', reason: 'unresolved-paths', pathCount: 1, byteLength: 0 }]
+      })
+      const view = render(<EditorGroup worktreeId="wt-b" groupId="group-b" />)
+      dropFile(view.getByTestId('group-b:area'), 'shot.png')
+      await waitFor(() => expect(mocks.stat).toHaveBeenCalledTimes(1))
+      expect(mocks.toastError).toHaveBeenCalledTimes(1)
+      view.unmount()
+      if (closed === 'workspace') {
+        delete mocks.groupsByWorktree['wt-b']
+      } else {
+        mocks.groupsByWorktree['wt-b'] = [{ id: 'group-other' }]
+      }
+      await act(async () => finish({ isDirectory: false, escapesWorktree: false }))
+      expect(mocks.openFile).not.toHaveBeenCalled()
+      expect(mocks.setActiveTabType).not.toHaveBeenCalled()
+      expect(mocks.toastError).toHaveBeenCalledTimes(1)
+    }
+  )
+
   it('creates no shared sequence for a render that never commits', async () => {
     const never = new Promise<never>(() => undefined)
     function SuspendedGroup() {
