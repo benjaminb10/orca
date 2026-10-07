@@ -26,6 +26,8 @@ import {
   TerminalPaneSshReconnectPortals
 } from './TerminalPaneRuntimePortals'
 import type { TerminalPaneController } from './use-terminal-pane-controller'
+import { useAppStore } from '@/store'
+import { isTerminalPaneOnClient } from './terminal-pane-client-host'
 
 export function TerminalPaneSurface({
   controller
@@ -116,6 +118,7 @@ export function TerminalPaneSurface({
     visibleTerminalError,
     worktreeId
   } = controller
+  const paneOnClient = useAppStore((state) => isTerminalPaneOnClient(state, worktreeId))
 
   return (
     <>
@@ -188,6 +191,7 @@ export function TerminalPaneSurface({
         ? createPortal(
             <TerminalErrorToast
               error={visibleTerminalError}
+              paneOnClient={paneOnClient}
               onDismiss={dismissTerminalError}
               onRestartDaemon={() => daemonActions.setPending('restart')}
               onRetry={
