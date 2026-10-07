@@ -48,7 +48,12 @@ vi.mock('electron', () => ({
   ipcRenderer: { on: vi.fn(), send: mocks.legacyIpc, removeListener: vi.fn() },
   webUtils: { getPathForFile: (file: File) => `/client/${file.name}` }
 }))
-vi.mock('@/store', () => ({ useAppStore: { getState: () => mocks.state } }))
+vi.mock('@/store', () => ({
+  useAppStore: Object.assign(
+    <T,>(selector: (state: typeof mocks.state) => T) => selector(mocks.state),
+    { getState: () => mocks.state }
+  )
+}))
 vi.mock('@/runtime/runtime-file-client', () => ({
   importExternalPathsToRuntime: mocks.importPaths
 }))
