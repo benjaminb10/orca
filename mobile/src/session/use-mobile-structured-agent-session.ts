@@ -18,6 +18,7 @@ import {
   projectStructuredQuestion
 } from './mobile-structured-agent-prompts'
 import type { RpcClient } from '../transport/rpc-client'
+import type { MobileNativeChatVisualSource } from './mobile-native-chat-visual-read'
 import type { MobileChatPermission } from './mobile-native-chat-permission'
 import type { MobileChatQuestion } from './mobile-native-chat-question'
 import type { MobileNativeChatSession } from './use-mobile-native-chat-session'
@@ -73,6 +74,8 @@ type StructuredMobileSession = ReturnType<typeof useMobileStructuredAgentOptions
     queued: MobileStructuredQueuedMessageControls
     /** Running child work for the strip above the composer, as desktop shows it. */
     backgroundTasks: MobileStructuredBackgroundTasks
+    /** Where this chat's `::orca-visual` lines read their HTML from; null without a client. */
+    visualSource: MobileNativeChatVisualSource | null
   }
 
 export function useMobileStructuredAgentSession(args: {
@@ -279,8 +282,14 @@ export function useMobileStructuredAgentSession(args: {
     ]
   )
 
+  const visualSource = useMemo<MobileNativeChatVisualSource | null>(
+    () => (client && sessionId ? { client, sessionId } : null),
+    [client, sessionId]
+  )
+
   return {
     ...options,
+    visualSource,
     session: {
       messages,
       status,

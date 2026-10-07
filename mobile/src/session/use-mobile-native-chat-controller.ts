@@ -197,10 +197,7 @@ export function useMobileNativeChatController(args: {
     onSendError
   })
 
-  const { nativeChatFilePaths, loadNativeChatFiles } = useMobileNativeChatFileSearch({
-    client,
-    worktreeId
-  })
+  const nativeChatFiles = useMobileNativeChatFileSearch({ client, worktreeId })
 
   // Why: the send seam reports outgoing catalog commands to session-option
   // tracking, but the options hook needs the seam's dispatcher — a ref breaks
@@ -298,6 +295,7 @@ export function useMobileNativeChatController(args: {
     nativeChatSession,
     /** Structured lane: drives the per-turn status row and live tool progress. */
     nativeChatStructured: activeChatStructured,
+    nativeChatVisualSource: activeChatStructured ? structuredNativeChat.visualSource : null,
     nativeChatAgentWorking,
     nativeChatTurnIndicator: activeChatStructured ? structuredNativeChat.turnIndicator : null,
     nativeChatWorkingStartedAt: activeChatStructured ? structuredNativeChat.workingStartedAt : null,
@@ -324,8 +322,7 @@ export function useMobileNativeChatController(args: {
     // The inactive lane's session is starved of identity, so its cards stay empty.
     nativeChatQueued: structuredNativeChat.queued,
     nativeChatBackgroundTasks: activeChatStructured ? structuredNativeChat.backgroundTasks : null,
-    nativeChatFilePaths,
-    loadNativeChatFiles,
+    ...nativeChatFiles,
     handleNativeChatSend: activeChatStructured
       ? structuredNativeChatSend.send
       : handleNativeChatSend,

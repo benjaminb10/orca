@@ -92,7 +92,7 @@ function TaskRow({
       <View testID="background-task-row" style={styles.row}>
         <KindIcon kind={row.kind} size={14} />
         <AgentStateDot state={row.displayState} />
-        <Text style={styles.rowText} numberOfLines={1}>
+        <Text style={styles.rowText} numberOfLines={1} ellipsizeMode="tail">
           <Text style={styles.lead}>{lead}</Text>
           {trail ? <Text style={styles.trail}>{` · ${trail}`}</Text> : null}
         </Text>
@@ -108,6 +108,7 @@ function TaskRow({
             accessibilityLabel={say('stopTask', { value0: mobileAgentChildRowName(row) })}
             accessibilityState={{ disabled: busy }}
             disabled={busy}
+            hitSlop={6}
             style={({ pressed }) => [
               styles.textAction,
               pressed && styles.pressed,
@@ -205,6 +206,7 @@ function MobileNativeChatBackgroundTasksImpl({
           accessibilityRole="button"
           accessibilityState={{ expanded }}
           accessibilityLabel={backgroundTasksHeaderText(header)}
+          hitSlop={spacing.xs}
           style={({ pressed }) => [styles.header, pressed && styles.pressed]}
           onPress={() => setExpanded(!expanded)}
         >
@@ -263,6 +265,7 @@ function MobileNativeChatBackgroundTasksImpl({
                 accessibilityLabel={say('stopAll')}
                 accessibilityState={{ disabled: stopping.all }}
                 disabled={stopping.all}
+                hitSlop={6}
                 style={({ pressed }) => [
                   styles.textAction,
                   styles.stopAll,
@@ -283,7 +286,7 @@ function MobileNativeChatBackgroundTasksImpl({
 
 export const MobileNativeChatBackgroundTasks = memo(MobileNativeChatBackgroundTasksImpl)
 
-// Every action touches as a 44pt target (platform floor) inside its row, as the queued box's do.
+// hitSlop requests 44pt hit rects; compact native parent bounds still limit their reach.
 const MIN_TOUCH_TARGET = 44
 
 const styles = StyleSheet.create({
@@ -299,7 +302,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden'
   },
   header: {
-    minHeight: MIN_TOUCH_TARGET,
+    minHeight: 36,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -349,7 +352,8 @@ const styles = StyleSheet.create({
   },
   group: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs
   },
   groupLabel: {
     color: colors.textMuted,
@@ -357,10 +361,10 @@ const styles = StyleSheet.create({
     fontFamily: typography.monoFamily,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    paddingBottom: spacing.xs
+    paddingBottom: spacing.xs / 2
   },
   row: {
-    minHeight: MIN_TOUCH_TARGET,
+    minHeight: 32,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm
@@ -391,7 +395,7 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   textAction: {
-    minHeight: MIN_TOUCH_TARGET,
+    minHeight: 32,
     minWidth: MIN_TOUCH_TARGET,
     alignItems: 'center',
     justifyContent: 'center',

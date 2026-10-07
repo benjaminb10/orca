@@ -15,6 +15,7 @@ vi.mock('./MobileNativeChatQueuedMessages', () => ({ MobileNativeChatQueuedMessa
 vi.mock('./MobileNativeChatBackgroundTasks', () => ({
   MobileNativeChatBackgroundTasks: 'BackgroundTasks'
 }))
+vi.mock('./MobileNativeChatVisual', () => ({ useMobileNativeChatVisualRenderer: () => null }))
 
 function assistantTurn(id: string, text: string): NativeChatMessage {
   return { id, role: 'assistant', blocks: [{ type: 'text', text }], timestamp: 0, source: 'hook' }

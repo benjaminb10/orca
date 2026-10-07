@@ -94,6 +94,20 @@ describe('MobileNativeChatBackgroundTasks', () => {
       .join('')
   }
 
+  function styleOf(node: ReactTestInstance): Record<string, unknown> {
+    const rendered: unknown =
+      typeof node.props.style === 'function'
+        ? node.props.style({ pressed: false })
+        : node.props.style
+    const parts = Array.isArray(rendered) ? rendered : [rendered]
+    return Object.assign(
+      {},
+      ...parts.filter(
+        (part): part is Record<string, unknown> => typeof part === 'object' && part !== null
+      )
+    )
+  }
+
   function header(mounted: ReactTestRenderer): ReactTestInstance {
     return mounted.root.findAll(
       (node) =>
@@ -171,6 +185,84 @@ describe('MobileNativeChatBackgroundTasks', () => {
     expect(label.props.style).toMatchObject({ textTransform: 'uppercase' })
   })
 
+  it('keeps the collapsed header compact and requests a 44pt hit rectangle', () => {
+    const mounted = mount(tasksFor({ state: 'monitoring', children: [view('a')] }))
+    const toggle = header(mounted)
+    const style = styleOf(toggle)
+    expect(style.minHeight).toBe(36)
+    expect(toggle.props.hitSlop).toBe(4)
+    // Requested geometry only: the native parent can bound hitSlop.
+    expect(Number(style.minHeight) + 2 * toggle.props.hitSlop).toBe(44)
+    expect(style.height).toBeUndefined()
+    expect(style.maxHeight).toBeUndefined()
+    expect(toggle.props.accessibilityState.expanded).toBe(false)
+    expand(mounted)
+    expect(header(mounted).props.accessibilityState.expanded).toBe(true)
+    expand(mounted)
+    expect(header(mounted).props.accessibilityState.expanded).toBe(false)
+  })
+
+  it('uses compact rows and Stop controls with tight group spacing', () => {
+    const mounted = mount(
+      tasksFor({ state: 'monitoring', supportsTaskStop: true, children: [view('a'), view('b')] })
+    )
+    expand(mounted)
+    const rows = mounted.root.findAll((node) => node.props.testID === 'background-task-row')
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(row.type).toBe('View')
+      expect(row.props.hitSlop).toBeUndefined()
+      expect(styleOf(row).minHeight).toBe(32)
+    }
+    const stops = stopButtons(mounted)
+    expect(stops).toHaveLength(2)
+    for (const stop of stops) {
+      const style = styleOf(stop)
+      expect(style).toMatchObject({ minHeight: 32, minWidth: 44 })
+      expect(stop.props.hitSlop).toBe(6)
+      expect(Number(style.minHeight) + 2 * stop.props.hitSlop).toBe(44)
+    }
+    const label = mounted.root.find(
+      (node) => String(node.type) === 'Text' && node.props.children === 'Agents'
+    )
+    expect(label.parent?.props.style).toMatchObject({ paddingTop: 4, paddingBottom: 4 })
+    expect(styleOf(label).paddingBottom).toBe(2)
+  })
+
+  it('lets compact content grow with Dynamic Type and ellipsizes single-line fields', () => {
+    windowWidth.value = 320
+    const mounted = mount(
+      tasksFor({
+        state: 'monitoring',
+        supportsTaskStop: true,
+        children: [view('a', { state: 'waiting', description: 'A long agent task '.repeat(20) })]
+      })
+    )
+    expand(mounted)
+    const row = mounted.root.find((node) => node.props.testID === 'background-task-row')
+    const rowText = row.find(
+      (node) => String(node.type) === 'Text' && node.props.numberOfLines === 1
+    )
+    expect(rowText.props.ellipsizeMode).toBe('tail')
+    expect(styleOf(rowText)).toMatchObject({ flex: 1, minWidth: 0, fontSize: 12 })
+    const headerTexts = header(mounted).findAll((node) => String(node.type) === 'Text')
+    for (const text of headerTexts) {
+      expect(text.props).toMatchObject({ numberOfLines: 1, ellipsizeMode: 'tail' })
+      expect(styleOf(text)).toMatchObject({ flexShrink: 1, fontSize: 12 })
+    }
+    for (const node of mounted.root.findAll((node) =>
+      ['View', 'Text', 'Pressable'].includes(String(node.type))
+    )) {
+      expect(styleOf(node).height).toBeUndefined()
+      expect(styleOf(node).maxHeight).toBeUndefined()
+      expect(styleOf(node).lineHeight).toBeUndefined()
+      if (String(node.type) === 'Text') {
+        expect(node.props.allowFontScaling).not.toBe(false)
+        expect(node.props.maxFontSizeMultiplier).toBeUndefined()
+      }
+    }
+  })
+
   it('stops one row by its provider id and holds its button while the Stop is on its way', async () => {
     let finish: () => void = () => {}
     const stop = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)))
@@ -196,12 +288,25 @@ describe('MobileNativeChatBackgroundTasks', () => {
     expect(stopButtons(mounted)[0]!.props.disabled).toBe(false)
   })
 
-  it('offers Stop all only to a host with no per-row stop that still accepts one', () => {
-    const fallback = mount(tasksFor({ state: 'monitoring', children: [view('a')] }))
+  it('offers Stop all only to a host with no per-row stop that still accepts one', async () => {
+    let finish: () => void = () => {}
+    const stop = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)))
+    const fallback = mount(tasksFor({ state: 'monitoring', children: [view('a')] }, { stop }))
     expand(fallback)
     expect(stopButtons(fallback).map((button) => button.props.accessibilityLabel)).toEqual([
       'Stop background tasks'
     ])
+    const button = stopButtons(fallback)[0]!
+    expect(styleOf(button)).toMatchObject({ minHeight: 32, minWidth: 44 })
+    expect(button.props.hitSlop).toBe(6)
+    expect(Number(styleOf(button).minHeight) + 2 * button.props.hitSlop).toBe(44)
+    act(() => button.props.onPress())
+    act(() => button.props.onPress())
+    expect(stop).toHaveBeenCalledTimes(1)
+    expect(stop).toHaveBeenCalledWith(undefined)
+    expect(stopButtons(fallback)[0]!.props.disabled).toBe(true)
+    await act(async () => finish())
+    expect(stopButtons(fallback)[0]!.props.disabled).toBe(false)
     const none = mount(
       tasksFor({ state: 'monitoring', supportsStopAll: false, children: [view('a')] })
     )

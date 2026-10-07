@@ -17,6 +17,7 @@ import type { MobileStructuredBackgroundTasks } from './use-mobile-structured-ba
 import type { MobileNativeChatPendingMessage } from './use-mobile-native-chat-drafts'
 import type { useMobileNativeChatSession } from './use-mobile-native-chat-session'
 import type { MobileNativeChatSessionOptionPickersProps } from './MobileNativeChatSessionOptionPickers'
+import type { MobileNativeChatVisualSource } from './mobile-native-chat-visual-read'
 
 export type MobileNativeChatController = {
   /** Whether a tab's effective view is chat (per-tab override, else the default). */
@@ -34,6 +35,8 @@ export type MobileNativeChatController = {
   nativeChatSession: ReturnType<typeof useMobileNativeChatSession>
   /** Structured lane: drives the per-turn status row and live tool progress. */
   nativeChatStructured: boolean
+  /** Structured lane with a live client: where the transcript's visuals are read from. */
+  nativeChatVisualSource: MobileNativeChatVisualSource | null
   nativeChatAgentWorking: boolean
   /** What labels the live turn's one indicator row; null off the structured lane. */
   nativeChatTurnIndicator: NativeChatLiveTurnIndicator | null
