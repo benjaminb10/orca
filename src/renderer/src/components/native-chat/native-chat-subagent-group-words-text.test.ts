@@ -19,14 +19,14 @@ const IDS = Object.keys(NATIVE_CHAT_SUBAGENT_GROUP_COPY).filter(
 )
 const VALUES = { value0: 3 }
 
+function isCatalogObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 function catalogEntry(key: string): unknown {
   return key
     .split('.')
-    .reduce<unknown>(
-      (node, part) =>
-        typeof node === 'object' && node !== null ? Reflect.get(node, part) : undefined,
-      en
-    )
+    .reduce<unknown>((node, part) => (isCatalogObject(node) ? node[part] : undefined), en)
 }
 
 describe('desktop words for a transcript roster row', () => {
