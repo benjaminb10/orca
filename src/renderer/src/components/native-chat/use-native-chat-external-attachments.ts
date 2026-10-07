@@ -13,9 +13,15 @@ import {
   nativeChatWorktreeNotReadyNotice,
   resolveNativeChatAttachmentOwner,
   resolveNativeChatAttachmentOwnerForWorktree,
+  resolveNativeChatRuntimeSessionAttachmentOwner,
   uploadNativeChatAttachmentPaths,
-  type NativeChatAttachmentOwner
+  type NativeChatAttachmentOwner,
+  type NativeChatStructuredAttachmentSession
 } from './native-chat-attachment-upload'
+import {
+  attachNativeChatSessionAttachmentPaths,
+  type NativeChatPendingAttachmentChips
+} from './native-chat-session-attachment-drop'
 import { userNamedFileAccess } from '@/lib/local-file-access'
 import { useMountedRef } from '@/hooks/useMountedRef'
 import { findTerminalTabWorktreeId } from './native-chat-file-link'
@@ -23,6 +29,8 @@ import { findTerminalTabWorktreeId } from './native-chat-file-link'
 export type UseNativeChatExternalAttachmentsArgs = {
   terminalTabId: string
   structuredWorktreeId?: string
+  /** The structured chat behind this composer; decides where its uploads are stored. */
+  structuredSession?: NativeChatStructuredAttachmentSession
   /** Live composer-disabled state; read at await-resume via a ref so a flip
    *  mid-upload doesn't attach into a guarded composer. */
   disabled: boolean
@@ -31,15 +39,24 @@ export type UseNativeChatExternalAttachmentsArgs = {
     connectionId?: string | null,
     options?: NativeChatResolvedPathOptions
   ) => void
+  /** Chips shown while a file uploads, so Send waits for it. */
+  pendingChips: NativeChatPendingAttachmentChips
   setNotice: (notice: string | null) => void
 }
 
-type ComposerWorkspace = { structuredWorktreeId?: string; terminalTabId: string }
+type ComposerWorkspace = {
+  structuredWorktreeId?: string
+  terminalTabId: string
+  structuredSession?: NativeChatStructuredAttachmentSession
+}
 
 function isSameComposerWorkspace(captured: ComposerWorkspace, current: ComposerWorkspace): boolean {
   return (
     captured.structuredWorktreeId === current.structuredWorktreeId &&
-    captured.terminalTabId === current.terminalTabId
+    captured.terminalTabId === current.terminalTabId &&
+    captured.structuredSession?.sessionId === current.structuredSession?.sessionId &&
+    captured.structuredSession?.runtimeEnvironmentId ===
+      current.structuredSession?.runtimeEnvironmentId
   )
 }
 
@@ -51,8 +68,10 @@ function isSameComposerWorkspace(captured: ComposerWorkspace, current: ComposerW
 export function useNativeChatExternalAttachments({
   terminalTabId,
   structuredWorktreeId,
+  structuredSession,
   disabled,
   attachResolvedPaths,
+  pendingChips,
   setNotice
 }: UseNativeChatExternalAttachmentsArgs): {
   attachExternalPaths: (paths: string[]) => void
@@ -68,19 +87,36 @@ export function useNativeChatExternalAttachments({
   // The post-await gate asks which workspace this composer serves now, so it
   // reads the pane through a ref. Resolving through the render closure would
   // re-ask the workspace the upload started in — a comparison with itself.
-  const workspaceRef = useRef<ComposerWorkspace>({ structuredWorktreeId, terminalTabId })
+  const sessionId = structuredSession?.sessionId
+  const runtimeEnvironmentId = structuredSession?.runtimeEnvironmentId ?? null
+  const workspaceRef = useRef<ComposerWorkspace>({
+    structuredWorktreeId,
+    terminalTabId,
+    structuredSession
+  })
   useLayoutEffect(() => {
-    workspaceRef.current = { structuredWorktreeId, terminalTabId }
-  }, [structuredWorktreeId, terminalTabId])
+    workspaceRef.current = {
+      structuredWorktreeId,
+      terminalTabId,
+      structuredSession: sessionId ? { sessionId, runtimeEnvironmentId } : undefined
+    }
+  }, [runtimeEnvironmentId, sessionId, structuredWorktreeId, terminalTabId])
+  const pendingChipsRef = useRef(pendingChips)
+  useLayoutEffect(() => {
+    pendingChipsRef.current = pendingChips
+  }, [pendingChips])
 
   const resolveAttachmentOwner = useCallback(() => {
-    const workspace = workspaceRef.current
-    return workspace.structuredWorktreeId
-      ? resolveNativeChatAttachmentOwnerForWorktree(
-          useAppStore.getState(),
-          workspace.structuredWorktreeId
-        )
-      : resolveNativeChatAttachmentOwner(useAppStore.getState(), workspace.terminalTabId)
+    const { structuredWorktreeId, structuredSession, terminalTabId } = workspaceRef.current
+    if (structuredWorktreeId && structuredSession?.runtimeEnvironmentId) {
+      return resolveNativeChatRuntimeSessionAttachmentOwner({
+        sessionId: structuredSession.sessionId,
+        runtimeEnvironmentId: structuredSession.runtimeEnvironmentId
+      })
+    }
+    return structuredWorktreeId
+      ? resolveNativeChatAttachmentOwnerForWorktree(useAppStore.getState(), structuredWorktreeId)
+      : resolveNativeChatAttachmentOwner(useAppStore.getState(), terminalTabId)
   }, [])
 
   const captureExternalDrop = useCallback(
@@ -95,7 +131,8 @@ export function useNativeChatExternalAttachments({
         )
       const capturedWorktreeId = currentWorktreeId()
       const ownerStillCurrent = (): boolean =>
-        mountedRef.current &&
+        // Server uploads settle into the captured scope even while its composer is unmounted.
+        (owner.kind === 'runtime-session' || mountedRef.current) &&
         destinationIsCurrent() &&
         isSameComposerWorkspace(capturedWorkspace, workspaceRef.current) &&
         capturedWorktreeId === currentWorktreeId() &&
@@ -123,6 +160,17 @@ export function useNativeChatExternalAttachments({
         }
         if (!ownerStillCurrent()) {
           setNotice(nativeChatAttachmentOwnerChangedNotice())
+          return
+        }
+        if (owner.kind === 'runtime-session') {
+          await attachNativeChatSessionAttachmentPaths({
+            paths,
+            owner,
+            chips: pendingChipsRef.current,
+            isAbandoned: () => disabledRef.current,
+            ownerStillCurrent,
+            setNotice
+          })
           return
         }
         if (owner.kind === 'ssh') {

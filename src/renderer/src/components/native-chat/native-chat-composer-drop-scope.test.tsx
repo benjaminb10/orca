@@ -90,6 +90,7 @@ function ComposerBody({
     terminalTabId: pane,
     disabled,
     attachResolvedPaths: attachments.attachResolvedPaths,
+    pendingChips: attachments.pendingChips,
     setNotice
   })
   return (

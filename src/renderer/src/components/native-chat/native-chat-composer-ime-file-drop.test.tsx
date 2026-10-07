@@ -136,6 +136,7 @@ function ComposerProbe({
     structuredWorktreeId: structured ? (structuredWorkspaceId ?? workspaceId) : undefined,
     disabled,
     attachResolvedPaths: attachments.attachResolvedPaths,
+    pendingChips: attachments.pendingChips,
     setNotice
   })
 

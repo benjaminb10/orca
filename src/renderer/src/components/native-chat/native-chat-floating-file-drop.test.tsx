@@ -38,6 +38,12 @@ function Composer({ attach, notice }: { attach: () => void; notice: () => void }
     targetPtyId: 'local-pty',
     disabled: false,
     attachResolvedPaths: attach,
+    pendingChips: {
+      begin: () => null,
+      resolve: () => {},
+      drop: () => false,
+      attachReferences: () => {}
+    },
     setNotice: notice
   })
   return <button onClick={pickAttachments}>Attach file</button>
