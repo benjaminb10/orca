@@ -16,6 +16,7 @@ import type { WorktreeListVirtualizer } from './use-virtualizer'
 import type { VirtualizedWorktreeViewportProps } from './viewport-props'
 import type { WorktreeVirtualRowContext } from '../rows/virtual-row-dispatch'
 import type { RepoHeaderProjectActions } from '../rows/repo-header-project-actions'
+import { activateCompactProject } from '../../compact-project-activation'
 import { getRepoOwnerWorktreeVisibilityDefaults } from '../../../../store/worktree-visibility-defaults-by-host'
 
 type BuildArgs = {
@@ -109,7 +110,11 @@ export function buildWorktreeVirtualRowContext(args: BuildArgs): WorktreeVirtual
       onWorkspaceStatusDragLeave: statusDrag.handleWorkspaceStatusDragLeave,
       onWorkspacePinDragOver: statusDrag.handleWorkspacePinDragOver,
       onWorkspacePinDragLeave: statusDrag.handleWorkspacePinDragLeave,
-      onWorkspaceStatusDrop: statusDrag.handleWorkspaceStatusDrop
+      onWorkspaceStatusDrop: statusDrag.handleWorkspaceStatusDrop,
+      onCompactProjectActivate: (worktreeIds) => {
+        props.onWorktreeCardClick?.()
+        activateCompactProject(worktreeIds)
+      }
     },
     item: {
       settings: args.settings,

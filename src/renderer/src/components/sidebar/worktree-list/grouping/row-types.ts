@@ -31,6 +31,8 @@ export type GroupHeaderRow = {
   worktreeIds?: readonly string[]
   /** Compact project rows only: the project's visible workspaces, for its aggregate status. */
   projectWorktreeIds?: readonly string[]
+  /** Compact project rows only: whether this project holds the active workspace (its expanded state). */
+  compactProjectActive?: boolean
 }
 
 export type WorktreeRow = {

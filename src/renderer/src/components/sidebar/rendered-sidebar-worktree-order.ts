@@ -97,7 +97,8 @@ export function computeRenderedSidebarRows(
     pinnedDisplayPolicy,
     state.groupBy === 'repo' && state.projectOrderBy === 'attention'
       ? buildProjectAttentionFromState(state, visibleWorktrees)
-      : undefined
+      : undefined,
+    state.activeWorktreeId
   )
 
   // Why lazy: with no host filter, addHostSectionRows is a pass-through, so skip building the whole host registry on a keystroke.

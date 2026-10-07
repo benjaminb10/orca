@@ -72,7 +72,8 @@ export function buildRows(
   hostLabelById?: ReadonlyMap<string, string>,
   defaultHostId: ExecutionHostId = LOCAL_EXECUTION_HOST_ID,
   pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy = getPinnedWorktreeDisplayPolicy(settings),
-  projectAttentionByWorktree?: ProjectAttentionByWorktree
+  projectAttentionByWorktree?: ProjectAttentionByWorktree,
+  activeWorktreeId: string | null = null
 ): Row[] {
   const result: Row[] = []
   const projectIndex = buildProjectGroupingIndex(projectGrouping)
@@ -233,7 +234,8 @@ export function buildRows(
     worktreeMap,
     nestLineage,
     cyclicLineageIds,
-    compactProjectRows: settings?.compactProjectRows === true
+    compactProjectRows: settings?.compactProjectRows === true,
+    activeWorktreeId
   }
 
   if (groupBy !== 'repo' || projectGroups.length === 0) {

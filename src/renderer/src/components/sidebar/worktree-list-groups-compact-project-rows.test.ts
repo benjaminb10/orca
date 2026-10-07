@@ -34,6 +34,8 @@ function build(
     projectOrderBy?: 'manual' | 'recent' | 'attention'
     attention?: Map<string, WorktreeAttention>
     pendingRepoId?: string
+    activeWorktreeId?: string
+    collapsedGroups?: Set<string>
   } = {}
 ): Row[] {
   return buildRows(
@@ -41,7 +43,7 @@ function build(
     worktrees,
     repoMap,
     null,
-    new Set(),
+    options.collapsedGroups ?? new Set(),
     repoOrder,
     undefined,
     options.projectOrderBy ?? 'manual',
@@ -59,7 +61,8 @@ function build(
     undefined,
     undefined,
     undefined,
-    options.attention
+    options.attention,
+    options.activeWorktreeId ?? null
   )
 }
 
@@ -89,15 +92,71 @@ describe('buildRows compact project rows', () => {
     expect(headers(rows).map((row) => row.key)).toEqual(['repo:repo-b'])
   })
 
-  it('keeps the header and lists every workspace for a multi-workspace project', () => {
-    const rows = build([single, ...multi], { settings: COMPACT_SETTINGS })
+  it('collapses a multi-workspace project to its header when another project is active', () => {
+    const rows = build([single, ...multi], { settings: COMPACT_SETTINGS, activeWorktreeId: 'wt-a' })
     const header = headers(rows).find((row) => row.key === 'repo:repo-b')
-    expect(header?.projectWorktreeIds).toEqual(['wt-b1', 'wt-b2'])
-    expect(
-      items(rows)
-        .filter((row) => row.compactProjectHeader === undefined)
-        .map((row) => row.worktree.id)
-    ).toEqual(['wt-b1', 'wt-b2'])
+    expect(header).toMatchObject({
+      compactProjectActive: false,
+      projectWorktreeIds: ['wt-b1', 'wt-b2']
+    })
+    expect(items(rows).map((row) => row.worktree.id)).toEqual(['wt-a'])
+    expect(rows[0]).toMatchObject({ compactProjectHeader: { compactProjectActive: true } })
+  })
+
+  it('expands only the project holding the active workspace', () => {
+    const rows = build([single, ...multi], {
+      settings: COMPACT_SETTINGS,
+      activeWorktreeId: 'wt-b2'
+    })
+    expect(headers(rows).find((row) => row.key === 'repo:repo-b')?.compactProjectActive).toBe(true)
+    expect(items(rows).map((row) => row.worktree.id)).toEqual(['wt-a', 'wt-b1', 'wt-b2'])
+    expect(rows[0]).toMatchObject({ compactProjectHeader: { compactProjectActive: false } })
+  })
+
+  it('folds the expanded project when its chevron collapsed it', () => {
+    const rows = build(multi, {
+      settings: COMPACT_SETTINGS,
+      activeWorktreeId: 'wt-b1',
+      collapsedGroups: new Set(['repo:repo-b'])
+    })
+    expect(rows.map((row) => row.type)).toEqual(['header'])
+  })
+
+  it('lists a project notice only inside the expanded section', () => {
+    const notice = new Map([[repoA.id, { repo: repoA, hiddenWorktrees: [] }]])
+    const buildWithNotice = (activeWorktreeId: string | null): Row[] =>
+      buildRows(
+        'repo',
+        [single, ...multi],
+        repoMap,
+        null,
+        new Set(),
+        repoOrder,
+        undefined,
+        'manual',
+        {},
+        undefined,
+        false,
+        COMPACT_SETTINGS,
+        [],
+        new Set(),
+        notice,
+        new Map(),
+        [],
+        undefined,
+        [],
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        activeWorktreeId
+      )
+    const noticeRows = (rows: Row[]): Row[] =>
+      rows.filter((row) => row.type === 'imported-worktrees-card')
+    expect(noticeRows(buildWithNotice('wt-b1'))).toHaveLength(0)
+    const expanded = buildWithNotice('wt-a')
+    expect(expanded[0]?.type).toBe('item')
+    expect(expanded[1]?.type).toBe('imported-worktrees-card')
   })
 
   it('still folds a collapsed single-workspace project, since the row is the project', () => {

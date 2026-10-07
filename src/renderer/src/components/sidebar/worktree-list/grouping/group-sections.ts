@@ -56,8 +56,9 @@ export type SectionAppendContext = {
   worktreeMap: Map<string, Worktree>
   nestLineage: boolean
   cyclicLineageIds: ReadonlySet<string>
-  /** Group-by-project only: fold single-workspace projects into one row. */
+  /** Group-by-project only: one row per project, expanded only for the active workspace's project. */
   compactProjectRows?: boolean
+  activeWorktreeId?: string | null
 }
 
 function getSectionRepoIds(key: string, group: WorktreeGroupEntry): string[] {
@@ -100,8 +101,12 @@ function appendSectionWorktreeRows(
   })
 }
 
-// Why: a project whose only visible content is one workspace reads as that workspace,
-// so the header folds into the card; notices, pending creates and folders keep the header.
+function hasPendingCreation(ctx: SectionAppendContext, repoIds: readonly string[]): boolean {
+  return repoIds.some((repoId) => (ctx.pendingByRepo.get(repoId)?.length ?? 0) > 0)
+}
+
+// Why: a single-workspace project reads as that workspace, so the header folds into the card;
+// an in-flight create keeps the header so the pending row has a section to land in.
 function buildCompactProjectRow(
   ctx: SectionAppendContext,
   key: string,
@@ -114,12 +119,7 @@ function buildCompactProjectRow(
     !header.repo ||
     group.items.length !== 1 ||
     (group.folderWorkspaces?.length ?? 0) > 0 ||
-    repoIds.some(
-      (repoId) =>
-        ctx.importedWorktreesByRepo.has(repoId) ||
-        ctx.newExternalWorktreesInboxByRepo.has(repoId) ||
-        (ctx.pendingByRepo.get(repoId)?.length ?? 0) > 0
-    )
+    hasPendingCreation(ctx, repoIds)
   ) {
     return null
   }
@@ -130,6 +130,32 @@ function buildCompactProjectRow(
     return null
   }
   return { ...row, compactProjectHeader: header }
+}
+
+function appendProjectNoticeRows(ctx: SectionAppendContext, repoIds: readonly string[]): void {
+  for (const repoId of repoIds) {
+    const candidate = ctx.importedWorktreesByRepo.get(repoId)
+    if (candidate) {
+      ctx.result.push(
+        buildImportedWorktreesCardRow(
+          candidate,
+          'repo-group',
+          ctx.noticeHostContextLabelByRepoId?.get(repoId)
+        )
+      )
+    }
+  }
+  for (const repoId of repoIds) {
+    const candidate = ctx.newExternalWorktreesInboxByRepo.get(repoId)
+    if (candidate) {
+      ctx.result.push(
+        buildNewExternalWorktreesInboxRow(
+          candidate,
+          ctx.noticeHostContextLabelByRepoId?.get(repoId)
+        )
+      )
+    }
+  }
 }
 
 export function appendOrderedGroups(
@@ -144,8 +170,6 @@ export function appendOrderedGroups(
     workspaceStatuses,
     repoMap,
     defaultHostId,
-    importedWorktreesByRepo,
-    newExternalWorktreesInboxByRepo,
     pendingByRepo
   } = ctx
   for (const [key, group] of groupsToAppend) {
@@ -221,40 +245,28 @@ export function appendOrderedGroups(
             })()
 
     const repoIds = groupBy === 'repo' ? getSectionRepoIds(key, group) : []
+    let showSection = !isCollapsed
     if (groupBy === 'repo' && ctx.compactProjectRows) {
+      // Why accordion: only the project holding the active workspace lists its cards.
+      header.compactProjectActive =
+        ctx.activeWorktreeId != null &&
+        group.items.some((worktree) => worktree.id === ctx.activeWorktreeId)
       const compactRow = buildCompactProjectRow(ctx, key, group, header, repoIds, projectGroupDepth)
       if (compactRow) {
         result.push(compactRow)
+        if (header.compactProjectActive) {
+          appendProjectNoticeRows(ctx, repoIds)
+        }
         continue
       }
       header.projectWorktreeIds = group.items.map((worktree) => worktree.id)
+      showSection =
+        (header.compactProjectActive && !isCollapsed) || hasPendingCreation(ctx, repoIds)
     }
     result.push(header)
-    if (!isCollapsed) {
+    if (showSection) {
       if (groupBy === 'repo') {
-        for (const repoId of repoIds) {
-          const candidate = importedWorktreesByRepo.get(repoId)
-          if (candidate) {
-            result.push(
-              buildImportedWorktreesCardRow(
-                candidate,
-                'repo-group',
-                ctx.noticeHostContextLabelByRepoId?.get(repoId)
-              )
-            )
-          }
-        }
-        for (const repoId of repoIds) {
-          const candidate = newExternalWorktreesInboxByRepo.get(repoId)
-          if (candidate) {
-            result.push(
-              buildNewExternalWorktreesInboxRow(
-                candidate,
-                ctx.noticeHostContextLabelByRepoId?.get(repoId)
-              )
-            )
-          }
-        }
+        appendProjectNoticeRows(ctx, repoIds)
         // Why: surface in-progress creates at the top of their own repo so the
         // new workspace appears where it will land, not flashed to the very top
         // of the sidebar.

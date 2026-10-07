@@ -55,6 +55,8 @@ export type WorktreeCardProps = {
   statusPrDisplay?: WorktreeCardPrDisplay | null
   /** Compact project rows: the card stands in for its project, titled by the project name. */
   projectRowLabel?: string
+  /** The project row belongs to the active workspace, so it lists its agent rows. */
+  projectRowExpanded?: boolean
 }
 
 type DefaultedWorktreeCardProp =

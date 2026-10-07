@@ -158,6 +158,10 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     args.groupBy === 'repo' && args.projectOrderBy === 'attention',
     worktrees
   )
+  // Why gated: only compact project rows expand by the active workspace, so other modes don't rebuild rows on every switch.
+  const compactActiveWorktreeId = useAppStore((s) =>
+    args.groupBy === 'repo' && s.settings?.compactProjectRows === true ? s.activeWorktreeId : null
+  )
   const rows: Row[] = useMemo(
     () =>
       buildRows(
@@ -183,7 +187,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
         hostLabelById,
         defaultHostId,
         args.pinnedDisplayPolicy,
-        projectAttentionByWorktree
+        projectAttentionByWorktree,
+        compactActiveWorktreeId
       ),
     [
       args.groupBy,
@@ -207,7 +212,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       pendingCreations,
       hostLabelById,
       args.pinnedDisplayPolicy,
-      projectAttentionByWorktree
+      projectAttentionByWorktree,
+      compactActiveWorktreeId
     ]
   )
   const orderedHostOptions = useMemo(

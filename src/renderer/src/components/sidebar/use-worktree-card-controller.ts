@@ -165,7 +165,7 @@ export function useWorktreeCardController(props: ResolvedWorktreeCardProps) {
     ...(isProjectRow
       ? {
           visibleCardTitle: props.projectRowLabel ?? linked.visibleCardTitle,
-          showInlineAgentList: false,
+          showInlineAgentList: props.projectRowExpanded === true && secondary.showInlineAgentList,
           showLineageChildChip: false
         }
       : {})
