@@ -28,7 +28,13 @@ export function AttentionProjectOrderToggle(): React.JSX.Element {
           size="icon-xs"
           aria-label={label}
           aria-pressed={active}
-          onClick={toggleAttentionProjectOrder}
+          onClick={(event) => {
+            toggleAttentionProjectOrder()
+            // Why: a mouse click left focus on the button, so window refocus (Cmd+Tab) reopened the tooltip.
+            if (event.detail > 0) {
+              event.currentTarget.blur()
+            }
+          }}
         >
           {/* Why on the icon: Button owns its color; idle matches the muted header icons beside it. */}
           <ArrowDownWideNarrow
