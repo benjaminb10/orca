@@ -110,6 +110,12 @@ describe('buildRows compact project rows', () => {
     })
     expect(headers(rows).find((row) => row.key === 'repo:repo-b')?.compactProjectActive).toBe(true)
     expect(items(rows).map((row) => row.worktree.id)).toEqual(['wt-a', 'wt-b1', 'wt-b2'])
+    // Why: expanded cards force their agent rows, whatever the card display properties say.
+    expect(items(rows).map((row) => row.inExpandedCompactProject === true)).toEqual([
+      false,
+      true,
+      true
+    ])
     expect(rows[0]).toMatchObject({ compactProjectHeader: { compactProjectActive: false } })
   })
 

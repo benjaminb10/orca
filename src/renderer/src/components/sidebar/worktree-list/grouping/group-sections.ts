@@ -276,7 +276,16 @@ export function appendOrderedGroups(
           }
         }
       }
+      const firstCardIndex = result.length
       appendSectionWorktreeRows(ctx, result, key, group, projectGroupDepth)
+      if (header.compactProjectActive) {
+        for (let index = firstCardIndex; index < result.length; index++) {
+          const row = result[index]
+          if (row?.type === 'item') {
+            result[index] = { ...row, inExpandedCompactProject: true }
+          }
+        }
+      }
       for (const pair of folderPairs) {
         result.push(buildFolderWorkspaceRow(pair, projectGroupDepth))
       }

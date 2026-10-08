@@ -42,7 +42,7 @@ const WorktreeCard = React.memo(function WorktreeCard({
   affiliateListMode = false,
   statusPrDisplay = null,
   projectRowLabel,
-  projectRowExpanded
+  forceInlineAgents
 }: WorktreeCardProps): React.JSX.Element {
   const card = useWorktreeCardController({
     worktree,
@@ -79,7 +79,7 @@ const WorktreeCard = React.memo(function WorktreeCard({
     affiliateListMode,
     statusPrDisplay,
     projectRowLabel,
-    projectRowExpanded
+    forceInlineAgents
   })
 
   return <WorktreeCardSurface card={card} />

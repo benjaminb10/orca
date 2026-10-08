@@ -136,6 +136,8 @@ export function useWorktreeCardController(props: ResolvedWorktreeCardProps) {
     newCardStyle: foundation.newCardStyle,
     compactCards: foundation.compactCards,
     agentActivityDisplayMode: foundation.agentActivityDisplayMode,
+    // Why: the expanded compact project is the only place its agents show, so it ignores the card property.
+    forceInlineAgents: props.forceInlineAgents === true,
     workspacePorts: foundation.workspacePorts,
     openTaskPage: foundation.openTaskPage,
     updateWorktreeMeta: foundation.updateWorktreeMeta,
@@ -165,7 +167,7 @@ export function useWorktreeCardController(props: ResolvedWorktreeCardProps) {
     ...(isProjectRow
       ? {
           visibleCardTitle: props.projectRowLabel ?? linked.visibleCardTitle,
-          showInlineAgentList: props.projectRowExpanded === true && secondary.showInlineAgentList,
+          showInlineAgentList: props.forceInlineAgents === true,
           showLineageChildChip: false
         }
       : {})

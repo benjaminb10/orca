@@ -51,6 +51,8 @@ export type WorktreeRow = {
   hostContextLabel?: string
   /** Set when compact project rows fold a single-workspace project's header into this row. */
   compactProjectHeader?: GroupHeaderRow
+  /** Card listed under the expanded compact project, which always shows its agent rows. */
+  inExpandedCompactProject?: boolean
 }
 
 export type ImportedWorktreesCardCandidate = {

@@ -236,7 +236,10 @@ export function renderWorktreeItemRow(
           itemRow.lineageGroupKey ? ctx.getLineageToggleHandler(itemRow.lineageGroupKey) : undefined
         }
         projectRowLabel={compactProjectHeader?.label}
-        projectRowExpanded={compactProjectHeader?.compactProjectActive}
+        forceInlineAgents={
+          compactProjectHeader?.compactProjectActive === true ||
+          itemRow.inExpandedCompactProject === true
+        }
       />
       {compactProjectHeader && ctx.compactProjectActions ? (
         <CompactProjectRowActions ctx={ctx.compactProjectActions} header={compactProjectHeader} />
