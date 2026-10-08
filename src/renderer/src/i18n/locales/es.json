@@ -5383,8 +5383,8 @@
           "spaces": "Espacios",
           "views": "Vista de la barra lateral",
           "addProject": "Agregar proyecto",
-          "restoreProjectOrder": "Restaurar el orden anterior de proyectos",
-          "sortProjectsByAttention": "Ordenar proyectos por atención"
+          "restoreProjectList": "Restaurar la lista de proyectos anterior",
+          "compactProjectsByAttention": "Proyectos compactos, ordenados por atención"
         },
         "SidebarNav": {
           "80611a8b10": "Buscar",
@@ -9338,7 +9338,7 @@
             },
             "compactProjectRows": {
               "title": "Una fila por proyecto",
-              "description": "Al agrupar por proyecto, un proyecto con un solo espacio de trabajo se muestra en una sola fila con el estado de su agente. Los proyectos con varios espacios de trabajo muestran su estado más urgente.",
+              "description": "Al agrupar por proyecto, cada proyecto ocupa una fila con el estado de agente más urgente. Solo el proyecto del espacio de trabajo activo se despliega para mostrar sus espacios de trabajo y agentes; haz clic en un proyecto para abrirlo.",
               "compact": "compacto",
               "attention": "atención"
             }

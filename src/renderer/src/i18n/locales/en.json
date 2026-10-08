@@ -5624,8 +5624,8 @@
           "a30e34eb5c": "Close workspace board",
           "views": "Sidebar view",
           "addProject": "Add project",
-          "restoreProjectOrder": "Restore previous project order",
-          "sortProjectsByAttention": "Sort projects by attention"
+          "restoreProjectList": "Restore previous project list",
+          "compactProjectsByAttention": "Compact projects, sorted by attention"
         },
         "SidebarNav": {
           "80611a8b10": "Search",
@@ -9611,7 +9611,7 @@
             },
             "compactProjectRows": {
               "title": "One row per project",
-              "description": "When grouped by project, a project with one workspace shows as a single row with its agent status. Projects with several workspaces show their most urgent status.",
+              "description": "When grouped by project, every project is one row with its most urgent agent status. Only the project of the active workspace unfolds to show its workspaces and agents; click a project to open it.",
               "compact": "compact",
               "attention": "attention"
             }

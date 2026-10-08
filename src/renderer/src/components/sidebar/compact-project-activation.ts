@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store'
 import { getRepoMapFromState, getWorktreeMapFromState } from '@/store/selectors'
 import { activateWorktreeFromSidebar } from '@/lib/sidebar-worktree-activation'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
+import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { buildProjectAttentionFromState } from './project-attention-order'
 import { IDLE, type WorktreeAttention } from './smart-attention'
@@ -36,7 +36,10 @@ export function pickCompactProjectTargetWorktree(
   return best ?? worktrees.find((worktree) => worktree.isMainWorktree) ?? worktrees[0]
 }
 
-export function activateCompactProject(worktreeIds: readonly string[]): void {
+/** The workspace a project row, or its Cmd+1–9 slot, opens right now. */
+export function resolveCompactProjectWorktree(
+  worktreeIds: readonly string[]
+): { id: string; executionHostId?: ExecutionHostId } | undefined {
   const state = useAppStore.getState()
   const worktreeMap = getWorktreeMapFromState(state)
   const worktrees = worktreeIds.flatMap((id) => {
@@ -48,11 +51,16 @@ export function activateCompactProject(worktreeIds: readonly string[]): void {
     buildProjectAttentionFromState(state, worktrees)
   )
   if (!target) {
-    return
+    return undefined
   }
   const repo = getRepoMapFromState(state).get(target.repoId)
-  void activateWorktreeFromSidebar(
-    target.id,
-    target.hostId ?? (repo ? getRepoExecutionHostId(repo) : undefined)
-  )
+  const executionHostId = target.hostId ?? (repo ? getRepoExecutionHostId(repo) : undefined)
+  return { id: target.id, ...(executionHostId ? { executionHostId } : {}) }
+}
+
+export function activateCompactProject(worktreeIds: readonly string[]): void {
+  const target = resolveCompactProjectWorktree(worktreeIds)
+  if (target) {
+    void activateWorktreeFromSidebar(target.id, target.executionHostId)
+  }
 }

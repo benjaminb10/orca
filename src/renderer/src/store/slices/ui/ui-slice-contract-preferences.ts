@@ -37,6 +37,7 @@ export type UISlicePreferences = {
   attentionProjectOrderRestore: AttentionProjectOrderRestore | null
   /** Header toggle: attention order + one row per project, or back to the previous choice. */
   toggleAttentionProjectOrder: () => void
+  setCompactProjectRows: (enabled: boolean) => void
   showActiveOnly: boolean
   setShowActiveOnly: (v: boolean) => void
   showSleepingWorkspaces: boolean

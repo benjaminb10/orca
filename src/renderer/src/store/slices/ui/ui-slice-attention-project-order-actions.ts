@@ -20,6 +20,11 @@ export function createAttentionProjectOrderActions(
       if (next.compactProjectRows !== compactProjectRows) {
         void state.updateSettings({ compactProjectRows: next.compactProjectRows })
       }
+    },
+    // Why clear the restore point: a direct choice supersedes what the header toggle would put back.
+    setCompactProjectRows: (enabled) => {
+      set({ attentionProjectOrderRestore: null })
+      void get().updateSettings({ compactProjectRows: enabled })
     }
   }
 }

@@ -5365,8 +5365,8 @@
           "spaces": "스페이스",
           "views": "사이드바 보기",
           "addProject": "프로젝트 추가",
-          "restoreProjectOrder": "이전 프로젝트 순서로 복원",
-          "sortProjectsByAttention": "주의 필요 순으로 프로젝트 정렬"
+          "restoreProjectList": "이전 프로젝트 목록으로 복원",
+          "compactProjectsByAttention": "간결한 프로젝트, 주의 필요 순 정렬"
         },
         "SidebarNav": {
           "80611a8b10": "검색",
@@ -9324,7 +9324,7 @@
             "glm": "glm",
             "compactProjectRows": {
               "title": "프로젝트당 한 줄",
-              "description": "프로젝트별로 그룹화하면 워크스페이스가 하나인 프로젝트는 에이전트 상태와 함께 한 줄로 표시됩니다. 워크스페이스가 여러 개인 프로젝트는 가장 긴급한 상태를 표시합니다.",
+              "description": "프로젝트별로 그룹화하면 각 프로젝트는 가장 긴급한 에이전트 상태와 함께 한 줄로 표시됩니다. 활성 워크스페이스의 프로젝트만 펼쳐져 워크스페이스와 에이전트를 보여 줍니다. 프로젝트를 클릭하면 열립니다.",
               "compact": "간결",
               "attention": "주의"
             }

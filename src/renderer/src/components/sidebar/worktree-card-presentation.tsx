@@ -66,10 +66,12 @@ export function buildWorktreeCardPresentation(card: WorktreeCardController) {
     canUnlinkReview,
     handleUnlinkReview,
     detailsHoverControl,
-    showDeleteQuickAction,
+    showDeleteQuickAction: cardShowsDeleteQuickAction,
     projectRowLabel
   } = card
   const isProjectRow = projectRowLabel !== undefined
+  // Why: a project row's title line belongs to the project actions (… and +); details stay on hover.
+  const showDeleteQuickAction = !isProjectRow && cardShowsDeleteQuickAction
 
   // Why: pinned trees mix repos, so the repo icon shows regardless of groupBy's hideRepoBadge.
   const showPinnedRepoIcon = inPinnedSection && !!repo
@@ -100,7 +102,8 @@ export function buildWorktreeCardPresentation(card: WorktreeCardController) {
   const showCombinedStatusSlot = showStatus
   const showTitleRowPrimary = !isProjectRow && compactCards && worktree.isMainWorktree && !isFolder
   const showMetaRowDetails = !newCardStyle && !compactCards && (hasDetails || hasPorts)
-  const showTitleRowIndicators = (newCardStyle || compactCards) && (hasDetails || hasPorts)
+  const showTitleRowIndicators =
+    !isProjectRow && (newCardStyle || compactCards) && (hasDetails || hasPorts)
   // Why: grouped views can hide the repo badge; don't reserve a blank metadata lane unless there's real content.
   const hasDetailedMetaRowContent = Boolean(
     (showRepoBadgeInMetaRow && repo) ||

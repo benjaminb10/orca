@@ -1,16 +1,12 @@
 import React from 'react'
-import type { GlobalSettings } from '../../../../shared/global-settings-types'
+import { useAppStore } from '@/store'
 import { SearchableSetting } from './SearchableSetting'
 import { SettingsSwitchRow } from './SettingsFormControls'
 import { getCompactProjectRowsEntry } from './appearance-sidebar-search'
 
-export function CompactProjectRowsSetting({
-  settings,
-  updateSettings
-}: {
-  settings: GlobalSettings
-  updateSettings: (updates: Partial<GlobalSettings>) => void
-}): React.JSX.Element {
+export function CompactProjectRowsSetting(): React.JSX.Element {
+  const enabled = useAppStore((s) => s.settings?.compactProjectRows === true)
+  const setCompactProjectRows = useAppStore((s) => s.setCompactProjectRows)
   const entry = getCompactProjectRowsEntry()
   return (
     <SearchableSetting
@@ -21,10 +17,8 @@ export function CompactProjectRowsSetting({
       <SettingsSwitchRow
         label={entry.title}
         description={entry.description}
-        checked={settings.compactProjectRows === true}
-        onChange={() =>
-          updateSettings({ compactProjectRows: !(settings.compactProjectRows === true) })
-        }
+        checked={enabled}
+        onChange={() => setCompactProjectRows(!enabled)}
       />
     </SearchableSetting>
   )

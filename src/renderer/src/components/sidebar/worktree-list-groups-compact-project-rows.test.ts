@@ -4,6 +4,7 @@ import type { GroupHeaderRow, Row, WorktreeRow } from './worktree-list/grouping/
 import { repo, worktree } from './worktree-list-groups-test-fixtures'
 import type { AppState } from '@/store/types'
 import type { Repo } from '../../../../shared/repo-types'
+import type { ProjectGroup } from '../../../../shared/project-group-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import type { WorktreeAttention } from './smart-attention'
 import { getDefaultSettings } from '../../../../shared/constants'
@@ -240,6 +241,67 @@ describe('buildRows attention project order', () => {
       settings: COMPACT_SETTINGS
     })
     expect(items(rows).map((row) => row.compactProjectHeader?.key)).toEqual([
+      'repo:repo-b',
+      'repo:repo-a'
+    ])
+  })
+})
+
+describe('buildRows attention order details', () => {
+  it('keeps the persisted Smart snapshot until live agent evidence arrives', () => {
+    const rows = build(
+      [
+        { ...wt('wt-a', repoA.id, 900), sortOrder: 1 },
+        { ...wt('wt-b', repoB.id, 100), sortOrder: 5 }
+      ],
+      { projectOrderBy: 'attention' }
+    )
+    expect(headers(rows).map((row) => row.key)).toEqual(['repo:repo-b', 'repo:repo-a'])
+  })
+
+  it('ranks projects by attention inside a Project Group', () => {
+    const group: ProjectGroup = {
+      id: 'group-1',
+      name: 'Clients',
+      parentPath: '/clients',
+      parentGroupId: null,
+      createdFrom: 'folder-scan',
+      tabOrder: 0,
+      isCollapsed: false,
+      color: null,
+      createdAt: 1,
+      updatedAt: 1
+    }
+    const grouped = [repoA, repoB].map((r) => ({ ...r, projectGroupId: group.id }))
+    const rows = buildRows(
+      'repo',
+      [wt('wt-a', repoA.id), wt('wt-b', repoB.id)],
+      new Map(grouped.map((r) => [r.id, r])),
+      null,
+      new Set(),
+      repoOrder,
+      undefined,
+      'attention',
+      {},
+      undefined,
+      false,
+      undefined,
+      [group],
+      new Set(),
+      new Map(),
+      new Map(),
+      [],
+      undefined,
+      [],
+      undefined,
+      undefined,
+      undefined,
+      new Map<string, WorktreeAttention>([
+        ['wt-b', { cls: 1, attentionTimestamp: 1, cause: 'waiting' }]
+      ])
+    )
+    expect(headers(rows).map((row) => row.key)).toEqual([
+      'project-group:group-1',
       'repo:repo-b',
       'repo:repo-a'
     ])

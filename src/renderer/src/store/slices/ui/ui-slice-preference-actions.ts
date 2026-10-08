@@ -54,7 +54,8 @@ export function createUiPreferenceActions(set: UISliceSet, get: UISliceGet): Par
 
     // Why: bare set — persists only via the debounced window.api.ui.set writer in App.tsx, not on its own.
     projectOrderBy: 'manual',
-    setProjectOrderBy: (p) => set({ projectOrderBy: p }),
+    // Why clear the restore point: a direct choice supersedes what the header toggle would put back.
+    setProjectOrderBy: (p) => set({ projectOrderBy: p, attentionProjectOrderRestore: null }),
 
     showActiveOnly: false,
     setShowActiveOnly: (v) => set({ showActiveOnly: v }),

@@ -8,6 +8,8 @@ export type ProjectAttentionRank = {
   cls: SmartClass
   attentionTimestamp: number
   lastActivityAt: number
+  /** Cold start only: the project's best persisted Smart snapshot rank (worktree sortOrder). */
+  coldOrder?: number
 }
 
 export function projectAttentionRankForEntry(
@@ -17,7 +19,9 @@ export function projectAttentionRankForEntry(
   let cls: SmartClass = IDLE.cls
   let attentionTimestamp = 0
   let lastActivityAt = Number.NEGATIVE_INFINITY
+  let coldOrder = Number.NEGATIVE_INFINITY
   for (const worktree of entry[1].items) {
+    coldOrder = Math.max(coldOrder, worktree.sortOrder)
     const attention = attentionByWorktree?.get(worktree.id) ?? IDLE
     if (
       attention.cls < cls ||
@@ -30,7 +34,9 @@ export function projectAttentionRankForEntry(
       lastActivityAt = worktree.lastActivityAt
     }
   }
-  return { cls, attentionTimestamp, lastActivityAt }
+  return attentionByWorktree
+    ? { cls, attentionTimestamp, lastActivityAt }
+    : { cls, attentionTimestamp, lastActivityAt, coldOrder }
 }
 
 export function createProjectAttentionRankLookup(
@@ -58,6 +64,9 @@ export function compareProjectAttentionRank(
   }
   if (a.attentionTimestamp !== b.attentionTimestamp) {
     return b.attentionTimestamp - a.attentionTimestamp
+  }
+  if (a.coldOrder !== undefined && b.coldOrder !== undefined && a.coldOrder !== b.coldOrder) {
+    return a.coldOrder > b.coldOrder ? -1 : 1
   }
   if (a.lastActivityAt === b.lastActivityAt) {
     return 0

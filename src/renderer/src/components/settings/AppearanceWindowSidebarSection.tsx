@@ -340,7 +340,7 @@ export function AppearanceWindowSidebarSection({
                     />
                   </SearchableSetting>
 
-                  <CompactProjectRowsSetting settings={settings} updateSettings={updateSettings} />
+                  <CompactProjectRowsSetting />
                 </div>
               </div>
             ) : null}

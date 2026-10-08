@@ -115,12 +115,7 @@ function buildCompactProjectRow(
   repoIds: readonly string[],
   projectGroupDepth: number
 ): WorktreeRow | null {
-  if (
-    !header.repo ||
-    group.items.length !== 1 ||
-    (group.folderWorkspaces?.length ?? 0) > 0 ||
-    hasPendingCreation(ctx, repoIds)
-  ) {
+  if (!header.repo || group.items.length !== 1 || hasPendingCreation(ctx, repoIds)) {
     return null
   }
   const rows: Row[] = []
@@ -278,7 +273,7 @@ export function appendOrderedGroups(
       }
       const firstCardIndex = result.length
       appendSectionWorktreeRows(ctx, result, key, group, projectGroupDepth)
-      if (header.compactProjectActive) {
+      if (header.compactProjectActive !== undefined) {
         for (let index = firstCardIndex; index < result.length; index++) {
           const row = result[index]
           if (row?.type === 'item') {

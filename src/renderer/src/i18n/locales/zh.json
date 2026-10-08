@@ -5365,8 +5365,8 @@
           "spaces": "空间",
           "views": "侧边栏视图",
           "addProject": "添加项目",
-          "restoreProjectOrder": "恢复之前的项目顺序",
-          "sortProjectsByAttention": "按关注度排序项目"
+          "restoreProjectList": "恢复之前的项目列表",
+          "compactProjectsByAttention": "紧凑项目，按关注度排序"
         },
         "SidebarNav": {
           "80611a8b10": "搜索",
@@ -9324,7 +9324,7 @@
             "glm": "格鲁姆",
             "compactProjectRows": {
               "title": "每个项目一行",
-              "description": "按项目分组时，只有一个工作区的项目显示为带有代理状态的单行。包含多个工作区的项目显示其最紧急的状态。",
+              "description": "按项目分组时，每个项目显示为一行，并带有最紧急的代理状态。只有当前工作区所在的项目会展开，显示其工作区和代理；点击项目即可打开。",
               "compact": "紧凑",
               "attention": "关注"
             }

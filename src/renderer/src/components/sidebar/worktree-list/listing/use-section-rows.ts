@@ -20,7 +20,10 @@ import { deferHostSectionCollapse, scopeHostSectionCollapse } from '../../host-s
 import { addHostSectionRows } from '../../host-section-rows'
 import { orderHostSectionOptions } from '../../host-section-order'
 import { buildSidebarHostOptions } from '../../sidebar-host-options'
-import { selectPendingWorktreeCreationKeys } from './pending-worktree-creation-keys'
+import {
+  parsePendingWorktreeCreationKey,
+  selectPendingWorktreeCreationKeys
+} from './pending-worktree-creation-keys'
 import { useProjectAttentionByWorktree } from './use-project-attention'
 
 type SectionRowsArgs = {
@@ -103,14 +106,7 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     useShallow((s) => selectPendingWorktreeCreationKeys(s.pendingWorktreeCreations))
   )
   const pendingCreations = useMemo(
-    () =>
-      pendingCreationKeys.map((key) => {
-        const separator = key.indexOf(' ')
-        return {
-          creationId: key.slice(0, separator),
-          repoId: key.slice(separator + 1)
-        }
-      }),
+    () => pendingCreationKeys.map(parsePendingWorktreeCreationKey),
     [pendingCreationKeys]
   )
   const hostLabelOverrides = useMemo(

@@ -27,7 +27,8 @@ import { getWorktreeOptionId } from './option-dom'
 import type { WorktreeRowDragState } from '../drag/row-state'
 import {
   CompactProjectRowActions,
-  type CompactProjectRowActionsContext
+  getCompactProjectRowDrag,
+  type CompactProjectRowContext
 } from './compact-project-row-actions'
 
 export type WorktreeItemRowContext = {
@@ -66,7 +67,7 @@ export type WorktreeItemRowContext = {
     draggedIds: readonly string[]
   ) => void
   onCardDragEnd: () => void
-  compactProjectActions?: CompactProjectRowActionsContext
+  compactProject?: CompactProjectRowContext
 }
 
 // Geometry differs three ways: a plain grouped row, a lineage child inheriting its parent's
@@ -151,6 +152,7 @@ export function renderWorktreeItemRow(
     (ctx.worktreeDragState.lineageDropTargetId === itemRow.worktree.id ||
       ctx.nativeLineageDropTargetId === itemRow.worktree.id)
   const compactProjectHeader = nested ? undefined : itemRow.compactProjectHeader
+  const compactProjectDrag = getCompactProjectRowDrag(ctx.compactProject, compactProjectHeader)
   const isActiveWorktree =
     ctx.activeWorktreeId === itemRow.worktree.id &&
     (!ctx.activeWorkspaceExecutionHostId ||
@@ -170,6 +172,7 @@ export function renderWorktreeItemRow(
       data-worktree-drag-id={worktreeDragGroupKey ? itemRow.worktree.id : undefined}
       data-worktree-drag-group-key={worktreeDragGroupKey}
       data-worktree-drag-group-index={ctx.groupIndexByRowKey.get(itemRow.rowKey)}
+      {...compactProjectDrag.attributes}
       className={cn(
         // Why: don't transition 'transform' — it lags/flashes when TanStack Virtual repositions adjacent rows.
         'relative transition-[opacity,filter] duration-150 ease-out',
@@ -189,6 +192,10 @@ export function renderWorktreeItemRow(
       onPointerDown={(event) => {
         if (nested) {
           event.stopPropagation()
+        }
+        if (compactProjectDrag.onPointerDown) {
+          compactProjectDrag.onPointerDown(event)
+          return
         }
         ctx.onRowPointerDown(event, itemRow.worktree, itemRow.rowKey)
       }}
@@ -241,8 +248,12 @@ export function renderWorktreeItemRow(
           itemRow.inExpandedCompactProject === true
         }
       />
-      {compactProjectHeader && ctx.compactProjectActions ? (
-        <CompactProjectRowActions ctx={ctx.compactProjectActions} header={compactProjectHeader} />
+      {compactProjectHeader && ctx.compactProject ? (
+        <CompactProjectRowActions
+          ctx={ctx.compactProject}
+          header={compactProjectHeader}
+          expanded={compactProjectHeader.compactProjectActive === true}
+        />
       ) : null}
     </div>
   )

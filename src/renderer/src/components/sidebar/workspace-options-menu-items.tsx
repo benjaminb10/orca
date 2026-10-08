@@ -102,7 +102,7 @@ export function WorkspaceOptionsMenuItems({
   const projectOrderBy = useAppStore((s) => s.projectOrderBy)
   const setProjectOrderBy = useAppStore((s) => s.setProjectOrderBy)
   const compactProjectRows = useAppStore((s) => s.settings?.compactProjectRows === true)
-  const updateSettings = useAppStore((s) => s.updateSettings)
+  const setCompactProjectRows = useAppStore((s) => s.setCompactProjectRows)
   const { hostOptions } = useSidebarHostScopeOptions()
   const showHostScopeControls = shouldShowHostScopeControls(hostOptions)
   const sortLabel = SORT_OPTIONS.find((opt) => opt.id === sortBy)?.label ?? 'Sort'
@@ -238,9 +238,7 @@ export function WorkspaceOptionsMenuItems({
           </DropdownMenuSub>
           <DropdownMenuCheckboxItem
             checked={compactProjectRows}
-            onCheckedChange={(checked) =>
-              void updateSettings({ compactProjectRows: checked === true })
-            }
+            onCheckedChange={(checked) => setCompactProjectRows(checked === true)}
             onSelect={(e) => e.preventDefault()}
           >
             {getCompactProjectRowsLabel()}

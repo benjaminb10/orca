@@ -5504,8 +5504,8 @@
           "projects": "Projets",
           "spaces": "Espaces",
           "views": "Vue de la barre latérale",
-          "restoreProjectOrder": "Rétablir l'ordre précédent des projets",
-          "sortProjectsByAttention": "Trier les projets par attention"
+          "restoreProjectList": "Rétablir la liste de projets précédente",
+          "compactProjectsByAttention": "Projets compacts, triés par attention"
         },
         "SidebarNav": {
           "80611a8b10": "Recherche",
@@ -9486,7 +9486,7 @@
             "glm": "GLM",
             "compactProjectRows": {
               "title": "Une ligne par projet",
-              "description": "En regroupement par projet, un projet avec un seul espace de travail s'affiche sur une seule ligne avec le statut de son agent. Les projets avec plusieurs espaces de travail affichent leur statut le plus urgent.",
+              "description": "En regroupement par projet, chaque projet tient sur une ligne avec le statut d'agent le plus urgent. Seul le projet de l'espace de travail actif se déplie pour montrer ses espaces de travail et ses agents ; cliquez sur un projet pour l'ouvrir.",
               "compact": "compact",
               "attention": "attention"
             }

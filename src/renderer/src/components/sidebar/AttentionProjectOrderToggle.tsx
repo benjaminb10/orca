@@ -9,14 +9,15 @@ import { cn } from '@/lib/utils'
 export function AttentionProjectOrderToggle(): React.JSX.Element {
   const active = useAppStore((s) => s.projectOrderBy === 'attention')
   const toggleAttentionProjectOrder = useAppStore((s) => s.toggleAttentionProjectOrder)
+  // Why both effects in the copy: the toggle also switches on one row per project.
   const label = active
     ? translate(
-        'auto.components.sidebar.SidebarHeader.restoreProjectOrder',
-        'Restore previous project order'
+        'auto.components.sidebar.SidebarHeader.restoreProjectList',
+        'Restore previous project list'
       )
     : translate(
-        'auto.components.sidebar.SidebarHeader.sortProjectsByAttention',
-        'Sort projects by attention'
+        'auto.components.sidebar.SidebarHeader.compactProjectsByAttention',
+        'Compact projects, sorted by attention'
       )
 
   return (

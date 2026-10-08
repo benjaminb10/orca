@@ -130,7 +130,7 @@ export const getCompactProjectRowsEntry = createLocalizedCatalog((): SettingsSea
   ),
   description: translate(
     'auto.components.settings.appearance.search.compactProjectRows.description',
-    'When grouped by project, a project with one workspace shows as a single row with its agent status. Projects with several workspaces show their most urgent status.'
+    'When grouped by project, every project is one row with its most urgent agent status. Only the project of the active workspace unfolds to show its workspaces and agents; click a project to open it.'
   ),
   keywords: [
     ...translateSearchKeyword('auto.components.settings.appearance.search.5bff6a2ef0', 'sidebar'),

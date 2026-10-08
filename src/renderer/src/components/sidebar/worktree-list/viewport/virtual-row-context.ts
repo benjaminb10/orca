@@ -141,10 +141,11 @@ export function buildWorktreeVirtualRowContext(args: BuildArgs): WorktreeVirtual
       onRowPointerDown: args.onRowPointerDown,
       onCardDragStart: args.nativeDrag.handleWorktreeCardDragStart,
       onCardDragEnd: runtime.clearWorktreeDrag,
-      compactProjectActions: {
+      compactProject: {
         projectGroups: args.projectGroups,
         sshConnectionStates: args.sshConnectionStates,
-        projectActions
+        projectActions,
+        headerDrag
       }
     },
     folderWorkspace: {
