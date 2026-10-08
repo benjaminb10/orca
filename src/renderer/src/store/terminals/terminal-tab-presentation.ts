@@ -198,7 +198,11 @@ export function createTerminalTabPresentationActions(
         const shouldBump = hadClassification && ownerWorktreeId !== null && !isActive
         return {
           runtimePaneTitlesByTabId: next,
-          ...(shouldBump ? { sortEpoch: s.sortEpoch + 1 } : {})
+          ...(shouldBump ? { sortEpoch: s.sortEpoch + 1 } : {}),
+          // Why: the Attention project order still re-ranks the active project, coalesced (see setRuntimePaneTitle).
+          ...(hadClassification && isActive
+            ? { activeTitleAttentionEpoch: s.activeTitleAttentionEpoch + 1 }
+            : {})
         }
       })
     }

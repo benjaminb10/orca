@@ -402,4 +402,23 @@ describe('runtimePaneTitle → sortEpoch', () => {
     store.getState().setRuntimePaneTitle('tab-1', 1, '⠙ Claude')
     expect(store.getState().activeTitleAttentionEpoch).toBe(attentionEpoch + 1)
   })
+
+  it('bumps activeTitleAttentionEpoch, not sortEpoch, when an active classified title is cleared', () => {
+    const store = createTestStore()
+    seedStore(store, {
+      worktreesByRepo: {
+        repo1: [makeWorktree({ id: 'wt-active', repoId: 'repo1', path: '/path/wt-active' })]
+      },
+      tabsByWorktree: {
+        'wt-active': [makeTab({ id: 'tab-1', worktreeId: 'wt-active' })]
+      },
+      activeWorktreeId: 'wt-active'
+    })
+    store.getState().setRuntimePaneTitle('tab-1', 1, '⠋ Claude')
+    const sortEpoch = store.getState().sortEpoch
+    const attentionEpoch = store.getState().activeTitleAttentionEpoch
+    store.getState().clearRuntimePaneTitle('tab-1', 1)
+    expect(store.getState().sortEpoch).toBe(sortEpoch)
+    expect(store.getState().activeTitleAttentionEpoch).toBe(attentionEpoch + 1)
+  })
 })
