@@ -271,7 +271,7 @@ export type GlobalSettings = NativeChatGlobalSettings & {
   showMobileButton?: boolean
   /** Pinned workspaces show in one sidebar location by default; opt in to also show them in their natural groups. */
   showPinnedWorktreesInGroups?: boolean
-  /** Group-by-project: a single-workspace project renders as one row with its agent status. */
+  /** Group-by-project: every project renders as one row with its most urgent agent status; only the active workspace's project expands. */
   compactProjectRows?: boolean
   /** How Ctrl+Tab picks the next visible tab; optional (older profiles), readers default to MRU. */
   ctrlTabOrderMode?: CtrlTabOrderMode

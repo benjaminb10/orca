@@ -166,7 +166,10 @@ export function createTerminalTabPresentationActions(
             ...s.runtimePaneTitlesByTabId,
             [tabId]: { ...currentByPane, [paneId]: title }
           },
-          ...(shouldBump ? { sortEpoch: s.sortEpoch + 1 } : {})
+          ...(shouldBump ? { sortEpoch: s.sortEpoch + 1 } : {}),
+          ...(classificationChanged && isActive
+            ? { activeTitleAttentionEpoch: s.activeTitleAttentionEpoch + 1 }
+            : {})
         }
       })
     },
