@@ -79,8 +79,7 @@ describe('quick-create modal card without an attachment destination', () => {
     const hook = renderHook(() =>
       useComposerState({
         initialRepoId: 'local-project',
-        persistDraft: false,
-        createGateMode: 'quick'
+        persistDraft: false
       })
     )
     expect(hook.result.current.cardProps.selectedRepoPath).toBe('/project')
@@ -91,6 +90,7 @@ describe('quick-create modal card without an attachment destination', () => {
           {...hook.result.current.cardProps}
           composerRef={hook.result.current.composerRef}
           onComposerNodeChange={hook.result.current.onComposerNodeChange}
+          onCreate={() => {}}
           primaryActionLabel="Create workspace"
           quickAgent={null}
           onQuickAgentChange={() => {}}

@@ -47,6 +47,8 @@ export type NativeChatComposerFieldProps = {
   activeSuggestion: number
   notices: readonly NativeChatComposerNotice[]
   imageAttachments: readonly NativeChatComposerImageAttachment[]
+  /** The paired server a structured chat runs on, which reads back files stored there. */
+  attachmentEnvironmentId?: string
   sendButtonDisabled: boolean
   /** Why the send button is disabled, when the user can do something about it. */
   sendBlockedReason?: string | null
@@ -96,6 +98,10 @@ export type NativeChatComposerImageAttachment = {
   previewUrl?: string
   /** True while the pasted image is still being written to disk or uploaded. */
   pending?: boolean
+  /** The file's name while it uploads: a dropped or picked file, not a pasted image. */
+  pendingName?: string
+  /** Owed to the message but not shown yet: a rich-text paste's image while its server is asked. */
+  hidden?: true
   /** Set on an image the draft names but can't send: the file to attach again. */
   unavailableName?: string
 }
@@ -133,6 +139,7 @@ export function NativeChatComposerField({
   activeSuggestion,
   notices,
   imageAttachments,
+  attachmentEnvironmentId,
   sendButtonDisabled,
   sendBlockedReason,
   isWorking,
@@ -167,6 +174,7 @@ export function NativeChatComposerField({
   sessionOptionsPickerRequest,
   goalMode
 }: NativeChatComposerFieldProps): React.JSX.Element {
+  const shownAttachments = imageAttachments.filter((attachment) => !attachment.hidden)
   const draftNotSaved = useNativeChatComposerDraftUnsaved(draftScopeKey)
   const optionCount =
     autocomplete.mode === 'slash'
@@ -274,12 +282,13 @@ export function NativeChatComposerField({
               '[contain:paint]'
             )}
           >
-            {imageAttachments.length > 0 ? (
+            {shownAttachments.length > 0 ? (
               <div className="mb-2 flex flex-wrap gap-2 px-1 pt-1.5">
-                {imageAttachments.map((attachment) => (
+                {shownAttachments.map((attachment) => (
                   <NativeChatImageAttachmentPreview
                     key={attachment.id}
                     attachment={attachment}
+                    hostEnvironmentId={attachmentEnvironmentId}
                     onRemove={onRemoveImageAttachment}
                   />
                 ))}
