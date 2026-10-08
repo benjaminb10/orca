@@ -92,7 +92,6 @@ beforeEach(() => {
   })
   vi.stubGlobal('api', {
     // The legacy broadcast stays available; only the element drop may import.
-    ui: { onFileDrop: () => () => undefined },
     fs: {
       getPathForFile: (file: File) => `/source/${file.name}`,
       prepareDroppedPaths: mocks.prepare

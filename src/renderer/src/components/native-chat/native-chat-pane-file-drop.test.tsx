@@ -127,9 +127,7 @@ describe('NativeChatPaneFileDropSurface', () => {
     const { transcript, container } = renderPane(null)
     fireDrag(transcript, 'dragover', workspaceDrag())
     expect(container.querySelector(OVERLAY)).toBeNull()
-    expect(container.querySelector('.pane')?.hasAttribute('data-native-file-drop-target')).toBe(
-      false
-    )
+    expect(container.querySelector('.pane')?.hasAttribute('data-os-file-drop-owner')).toBe(true)
   })
 
   it('does not invite a drop the guarded composer will refuse', () => {
