@@ -11,12 +11,14 @@ function createHandlers(
     action = { type: 'toggleSearch' },
     keybindings,
     onClearPaneScrollback = vi.fn(),
-    terminal = {}
+    terminal = {},
+    createCapturedInputSender = () => vi.fn()
   }: {
     action?: TerminalShortcutAction
     keybindings?: KeybindingOverrides
     onClearPaneScrollback?: () => void
     terminal?: { selectAll?: () => void; getSelection?: () => string }
+    createCapturedInputSender?: () => () => void
   } = {}
 ) {
   const pane = { id: 1, leafId: 'leaf-1', terminal: { element: scope, ...terminal } }
@@ -27,7 +29,7 @@ function createHandlers(
     shortcutPlatform: 'linux',
     keyboardScopeRef: { current: scope },
     resolveShortcutEvent: () => action,
-    createCapturedInputSender: () => vi.fn(),
+    createCapturedInputSender,
     nativeOnlyShortcutTracker: {
       prepareKeyDown: vi.fn(),
       armKeyDown: vi.fn()
@@ -144,6 +146,21 @@ describe('terminal selection under a native chat cover', () => {
 
     pressChord(scope, handlers, 'a')
     expect(selectAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not forward a kitty select-all to the hidden terminal from the chat', () => {
+    const { scope, transcript } = mountCoveredPane()
+    const sendInput = vi.fn()
+    const handlers = createHandlers(scope, vi.fn(), {
+      action: { type: 'sendInput', data: '\x1b[97;9u', selectAllChord: true },
+      createCapturedInputSender: () => sendInput
+    })
+
+    expect(pressChord(transcript, handlers, 'a').defaultPrevented).toBe(false)
+    expect(sendInput).not.toHaveBeenCalled()
+
+    expect(pressChord(scope, handlers, 'a').defaultPrevented).toBe(true)
+    expect(sendInput).toHaveBeenCalledTimes(1)
   })
 })
 

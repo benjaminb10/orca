@@ -33,4 +33,49 @@ describe('terminal select-all shortcut', () => {
     })
     expect(resolveTerminalShortcutAction(event({ ctrlKey: true }), false)).toBeNull()
   })
+
+  it('forwards Cmd+A as kitty Super+A when the macOS pane negotiated the protocol', () => {
+    const kitty = (flags: number) => () => flags
+    const resolve = (overrides: Partial<TerminalShortcutEvent>, flags: number) =>
+      resolveTerminalShortcutAction(
+        event({ metaKey: true, ...overrides }),
+        true,
+        'false',
+        0,
+        false,
+        undefined,
+        undefined,
+        kitty(flags)
+      )
+
+    expect(resolve({}, 1)).toEqual({ type: 'sendInput', data: '\x1b[97;9u', selectAllChord: true })
+    // Why: CapsLock is not reported, matching xterm's own kitty encoder.
+    expect(resolve({ getModifierState: (key) => key === 'CapsLock' }, 1)).toEqual({
+      type: 'sendInput',
+      data: '\x1b[97;9u',
+      selectAllChord: true
+    })
+    // Report-event-types apps get the repeat they asked for.
+    expect(resolve({ repeat: true }, 3)).toEqual({
+      type: 'sendInput',
+      data: '\x1b[97;9:2u',
+      selectAllChord: true
+    })
+    expect(resolve({}, 0)).toEqual({ type: 'selectAll' })
+  })
+
+  it('keeps Ctrl+Shift+A as select-all off macOS even with kitty flags', () => {
+    expect(
+      resolveTerminalShortcutAction(
+        event({ ctrlKey: true, shiftKey: true }),
+        false,
+        'false',
+        0,
+        false,
+        undefined,
+        undefined,
+        () => 1
+      )
+    ).toEqual({ type: 'selectAll' })
+  })
 })

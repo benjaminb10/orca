@@ -229,6 +229,7 @@ export function createTerminalKeyboardEventHandlers(context: EventContext) {
       isInsideNativeChatCover(e.target) &&
       (action.type === 'toggleSearch' ||
         action.type === 'selectAll' ||
+        (action.type === 'sendInput' && action.selectAllChord === true) ||
         action.type === 'copySelection' ||
         keybindingMatchesAction('chat.find', e, shortcutPlatform, keybindings))
     ) {

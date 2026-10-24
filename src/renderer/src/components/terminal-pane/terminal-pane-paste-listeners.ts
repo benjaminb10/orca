@@ -16,6 +16,10 @@ import {
 } from '@/lib/app-menu-selection-actions'
 import { isEditableTarget } from '@/lib/editable-target'
 import { copyTerminalSelection } from './terminal-selection-copy'
+import {
+  encodeTerminalMenuSelectAllKitty,
+  shouldForwardSelectAllToKittyApp
+} from './terminal-kitty-select-all'
 import { isInsideNativeChatCover } from './native-chat-covered-pane'
 import type { TerminalPaneCloseController } from './use-terminal-pane-close-actions'
 import {
@@ -40,6 +44,7 @@ export function registerTerminalPanePasteListeners({
     forceBracketedMultilineTextPaste,
     keybindings,
     managerRef,
+    paneKittyKeyboardModesRef,
     paneTransportsRef,
     setTerminalError,
     worktreeId
@@ -228,6 +233,13 @@ export function registerTerminalPanePasteListeners({
     }
     if (action === 'select-all') {
       event.preventDefault()
+      // Why: same ownership as the keyboard chord, so a menu click never selects scrollback
+      // under a kitty TUI. The Cmd+A accelerator itself only lands here when no keydown claimed it.
+      const kittyFlags = paneKittyKeyboardModesRef.current.get(pane.id)?.flags ?? 0
+      if (shouldForwardSelectAllToKittyApp(isMac, kittyFlags)) {
+        pane.terminal.input(encodeTerminalMenuSelectAllKitty(kittyFlags))
+        return
+      }
       pane.terminal.selectAll()
     }
   }
