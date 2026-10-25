@@ -4,6 +4,7 @@ import {
   optionKittyPrimaryCharacterFallback,
   resolveTerminalKittyPrimaryCodePoint
 } from './terminal-kitty-csi-u-encoding'
+import { withoutKittyLockModifiers } from './terminal-kitty-select-all'
 
 export type TerminalOptionKittyRelease = {
   flags: number
@@ -42,7 +43,7 @@ function keyIdentity(event: Pick<OptionKeyboardEvent, 'key' | 'code'>): string {
 
 /** Drops CapsLock/NumLock from the event when the armed press was encoded without them. */
 function withoutLockModifiers(event: OptionKeyboardEvent, ignore: boolean): OptionKeyboardEvent {
-  return ignore ? { ...event, capsLock: false, numLock: false } : event
+  return ignore ? withoutKittyLockModifiers(event) : event
 }
 
 /**

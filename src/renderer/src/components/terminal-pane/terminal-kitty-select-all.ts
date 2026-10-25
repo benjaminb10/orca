@@ -21,6 +21,40 @@ export function shouldForwardSelectAllToKittyApp(isMac: boolean, kittyFlags: num
   return isMac && kittyFlags > 0
 }
 
+type LockFreeKeyEvent = {
+  key: string
+  code?: string
+  shiftKey: boolean
+  altKey: boolean
+  ctrlKey: boolean
+  metaKey: boolean
+  repeat?: boolean
+  getModifierState?: (key: string) => boolean
+  capsLock?: boolean
+  numLock?: boolean
+}
+
+/**
+ * A copy of the key event with CapsLock/NumLock reported off. Why: `key`, `code` and the
+ * modifier flags of a native KeyboardEvent are prototype getters an object spread drops, and
+ * `getModifierState` must keep the native event as its receiver.
+ */
+export function withoutKittyLockModifiers<E extends LockFreeKeyEvent>(event: E): E {
+  return {
+    ...event,
+    key: event.key,
+    code: event.code,
+    shiftKey: event.shiftKey,
+    altKey: event.altKey,
+    ctrlKey: event.ctrlKey,
+    metaKey: event.metaKey,
+    repeat: event.repeat,
+    getModifierState: (key: string) => event.getModifierState?.(key) ?? false,
+    capsLock: false,
+    numLock: false
+  }
+}
+
 /** Encodes the select-all keydown (Cmd+A by default) as the kitty CSI-u the app asked for. */
 export function encodeTerminalSelectAllKittyKeyDown(
   event: TerminalSelectAllKeyEvent,
@@ -30,7 +64,7 @@ export function encodeTerminalSelectAllKittyKeyDown(
   return encodeTerminalOptionKittyEvent(
     // Why: xterm's own kitty encoder (what terminal-first uses) never reports lock modifiers;
     // matching it keeps CapsLock from turning `97;9u` into a `97;73u` apps do not bind.
-    { ...event, capsLock: false, numLock: false },
+    withoutKittyLockModifiers(event),
     {
       flags: kittyFlags,
       type: event.repeat ? 'repeat' : 'press',
