@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { dispatchAppMenuSelectionAction } from '@/lib/app-menu-selection-actions'
 import { registerTerminalPanePasteListeners } from './terminal-pane-paste-listeners'
 
+/** Mounts a focused pane with the given platform and kitty flags, and registers its listeners. */
 function mountPane(isMac: boolean, kittyFlags: number) {
   const container = document.createElement('div')
   const textarea = document.createElement('div')

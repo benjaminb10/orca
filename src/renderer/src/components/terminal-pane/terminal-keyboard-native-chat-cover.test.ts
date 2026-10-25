@@ -4,6 +4,7 @@ import type { KeybindingOverrides } from '../../../../shared/keybindings'
 import { createTerminalKeyboardEventHandlers } from './terminal-keyboard-event-handlers'
 import type { TerminalShortcutAction } from './terminal-shortcut-policy'
 
+/** Builds keyboard handlers whose shortcut resolver always returns `action`. */
 function createHandlers(
   scope: HTMLElement,
   setSearchOpen: (open: boolean) => void,

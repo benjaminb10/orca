@@ -1,7 +1,9 @@
+import { KITTY_REPORT_EVENT_TYPES } from '../../../../shared/terminal-kitty-keyboard-flags'
 import {
   encodeTerminalKittyCsiU,
   encodeTerminalOptionKittyEvent
 } from './terminal-kitty-csi-u-encoding'
+import type { TerminalOptionKittyRelease } from './terminal-option-kitty-release'
 
 type TerminalSelectAllKeyEvent = Parameters<typeof encodeTerminalOptionKittyEvent>[0]
 
@@ -35,6 +37,16 @@ export function encodeTerminalSelectAllKittyKeyDown(
       layoutCharacterForCode
     }
   )
+}
+
+/**
+ * The keyup release a forwarded select-all press owes the app. Why: the press never reaches
+ * xterm, so the orphan-keyup guard drops the physical keyup; without event types nothing is owed.
+ */
+export function selectAllKittyRelease(kittyFlags: number): TerminalOptionKittyRelease | undefined {
+  return (kittyFlags & KITTY_REPORT_EVENT_TYPES) === 0
+    ? undefined
+    : { flags: kittyFlags, ignoreLockModifiers: true }
 }
 
 /**

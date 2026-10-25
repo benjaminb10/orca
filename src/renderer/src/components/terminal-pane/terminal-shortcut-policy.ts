@@ -15,6 +15,7 @@ import type { OptionKeyLocationState } from '../../lib/keyboard-layout/option-ke
 import type { TerminalOptionKittyRelease } from './terminal-option-kitty-release'
 import {
   encodeTerminalSelectAllKittyKeyDown,
+  selectAllKittyRelease,
   shouldForwardSelectAllToKittyApp
 } from './terminal-kitty-select-all'
 
@@ -134,7 +135,14 @@ export function resolveTerminalShortcutAction(
     const data = shouldForwardSelectAllToKittyApp(isMac, kittyFlags)
       ? encodeTerminalSelectAllKittyKeyDown(event, kittyFlags, layoutCharacterForCode)
       : null
-    return data ? { type: 'sendInput', data, selectAllChord: true } : { type: 'selectAll' }
+    if (!data) {
+      return { type: 'selectAll' }
+    }
+    // The release tracker owes the app the matching keyup when it asked for event types.
+    const optionKittyRelease = selectAllKittyRelease(kittyFlags)
+    return optionKittyRelease
+      ? { type: 'sendInput', data, optionKittyRelease, selectAllChord: true }
+      : { type: 'sendInput', data, selectAllChord: true }
   }
 
   if (matches('terminal.copySelection')) {

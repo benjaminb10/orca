@@ -27,6 +27,10 @@ import {
   type TerminalPanePasteExecution
 } from './terminal-pane-paste-execution'
 
+/**
+ * Wires a terminal pane's paste chords and the Edit menu's paste/copy/select-all actions to the
+ * active pane; returns the disposer.
+ */
 export function registerTerminalPanePasteListeners({
   container,
   controller,
@@ -203,6 +207,7 @@ export function registerTerminalPanePasteListeners({
     }).catch(() => setTerminalError('Paste failed.'))
   }
 
+  /** Runs Edit > Copy / Select All on the active pane; a kitty TUI on macOS gets Cmd+A instead. */
   const onAppMenuSelectionAction = (event: Event): void => {
     const activeElement = document.activeElement
     if (
